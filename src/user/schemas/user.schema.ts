@@ -21,6 +21,9 @@ export class UserModel {
 
 	@Prop({ type: Boolean, default: false })
 	isEmailVerified: boolean;
+
+	@Prop({ type: [String], default: [] })
+	groups: string[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserModel);
