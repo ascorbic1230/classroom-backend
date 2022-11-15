@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { GroupModel } from '@/group/schemas/group.schema';
 
 export type UserDocument = UserModel & Document;
 @Schema({
@@ -23,8 +22,8 @@ export class UserModel {
 	@Prop({ type: Boolean, default: false })
 	isEmailVerified: boolean;
 
-	@Prop({ type: [Types.ObjectId], ref: GroupModel.name })
-	groups: GroupModel[];
+	@Prop({ type: [Types.ObjectId], ref: 'groups' })
+	groups: Types.ObjectId[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserModel);

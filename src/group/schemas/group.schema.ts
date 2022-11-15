@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type GroupDocument = GroupModel & Document;
 @Schema({ timestamps: true, collection: 'groups' })
@@ -13,8 +13,8 @@ export class GroupModel {
 	@Prop({ type: String, default: 'No Description' })
 	description: string;
 
-	@Prop({ type: Array, required: true })
-	users: string[];
+	@Prop({ type: [Types.ObjectId], ref: 'users' })
+	users: Types.ObjectId[];
 
 	@Prop({ type: String, default: null })
 	userCreated: string;

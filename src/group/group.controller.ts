@@ -11,6 +11,12 @@ export class GroupController {
 		return this.groupService.findAll(query);
 	}
 
+	@Get(':id')
+	@UseGuards(JwtAuthGuard)
+	getGroupById(@Req() req) {
+		return this.groupService.findById(req.params.id);
+	}
+
 	@Post()
 	@UseGuards(JwtAuthGuard)
 	createGroup(@Req() req, @Body() body: any) {

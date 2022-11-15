@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserModel, UserDocument } from './schemas/user.schema';
 import { JwtService } from "@nestjs/jwt";
+import { GroupModel } from "@/group/schemas/group.schema";
 
 @Injectable()
 export class UserService {
@@ -43,6 +44,8 @@ export class UserService {
 	}
 
 	getMyGroups(userId: string) {
-		return this.userModel.findById(userId).populate('groups');
+		return this.userModel.findById(userId).populate({
+			'path': 'groups', model: GroupModel.name
+		});
 	}
 }

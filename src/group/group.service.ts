@@ -5,6 +5,7 @@ import { get } from 'lodash';
 import { GroupModel, GroupDocument } from './schemas/group.schema';
 import { sanitizePageSize } from "@/utils";
 import { UserService } from "@/user/user.service";
+import { UserModel } from "@/user/schemas/user.schema";
 @Injectable()
 export class GroupService {
 
@@ -25,7 +26,7 @@ export class GroupService {
 		});
 		const [total, data] = await Promise.all([
 			this.groupModel.count(_query),
-			this.groupModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).lean(),
+			this.groupModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).lean()
 		]);
 		return {
 			data,
@@ -36,6 +37,18 @@ export class GroupService {
 				totalRows: total,
 			},
 		};
+	}
+
+	async findById(id: string): Promise<any> {
+		const group = await this.groupModel
+			.findById(id)
+			.populate({
+				path: 'users',
+				model: UserModel.name,
+				select: 'name email'
+			})
+			.lean();
+		return group;
 	}
 
 	async create(query: any, user): Promise<any> {
