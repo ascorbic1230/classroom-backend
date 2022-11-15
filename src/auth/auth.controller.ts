@@ -13,12 +13,13 @@ export class AuthController {
 	constructor(private authService: AuthService) { }
 
 	@Post('/sign-in')
-	async login(@Body() body) {
+	async login(@Body() body, @Res() res) {
 		const user = await this.authService.login(body);
-		return {
+		res.cookie('token', user.token);
+		res.json({
 			data: user,
 			message: 'Login successfully',
-		};
+		});
 	}
 
 	@Post('/sign-up')
@@ -33,15 +34,20 @@ export class AuthController {
 	@Get('/google')
 	async loginGoogle(@Res() res) {
 		const url = await this.authService.getGoogleRedirectLink();
-		console.log('url', url);
-		res.redirect(url);
+		return res.redirect(url);
 	}
 
 	@Get('/google/callback')
-	async loginGoogleCallback(@Query('code') code) {
+	async loginGoogleCallback(@Query('code') code, @Res() res) {
 		const user = await this.authService.loginGoogle(code);
-		return {
-			data: { ...user },
-		};
+		res.cookie('token', user.token);
+		// return {
+		// 	data: user,
+		// 	message: 'Login successfully',
+		// };
+		res.json({
+			data: user,
+			message: 'Login successfully',
+		});
 	};
 }

@@ -1,15 +1,12 @@
-import { DAOModule } from "@/dao/dao.module";
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { MongooseModule } from "@nestjs/mongoose";
-import { JwtModule } from "@nestjs/jwt";
-import { PassportModule } from "@nestjs/passport";
-import { UserModel, UserSchema } from "@/dao/schemas/user.schema";
-
+import { UserModel, UserSchema } from "@/user/schemas/user.schema";
+import { UserModule } from "@/user/user.module";
 @Module({
 	imports: [
-		DAOModule,
+		UserModule,
 		MongooseModule.forFeature([{ name: UserModel.name, schema: UserSchema }]),
 	],
 	providers: [AuthService],

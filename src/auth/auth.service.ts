@@ -5,7 +5,7 @@ import {
 	Req,
 	Res,
 } from '@nestjs/common';
-import { UserService } from "@/dao/services/user.service";
+import { UserService } from "@/user/user.service";
 import { hashPassword, validatePassword } from "@/utils";
 import { ConfigService } from "@nestjs/config";
 import { OAuth2Client } from "google-auth-library";
@@ -35,13 +35,15 @@ export class AuthService {
 		if (!validatePassword(dto.password, user.password)) {
 			throw new BadRequestException('Invalid password');
 		}
+
 		//generate jwt token
 		const token = this.userService.generateJWT(user);
 
 
 		return {
-			_id: user._id,
-			_email: user.email,
+			id: user._id,
+			email: user.email,
+			token: token,
 		};
 	}
 
@@ -58,8 +60,8 @@ export class AuthService {
 		});
 
 		return {
-			_id: newUser._id,
-			_email: newUser.email
+			id: newUser._id,
+			email: newUser.email
 		};
 	}
 
@@ -93,9 +95,13 @@ export class AuthService {
 			);
 		}
 
+		//generate jwt token
+		const token = this.userService.generateJWT(user);
+
 		return {
-			_id: user._id,
-			_email: user.email,
+			id: user._id,
+			email: user.email,
+			token: token,
 		};
 	}
 }

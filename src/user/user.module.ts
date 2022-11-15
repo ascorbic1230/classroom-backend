@@ -1,33 +1,32 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from "@nestjs/jwt";
 import { MongooseModule } from '@nestjs/mongoose';
-import { PassportModule } from "@nestjs/passport";
-import { UserModel, UserSchema } from '@/dao/schemas/user.schema';
-import { UserService } from "./services/user.service";
+import { UserModel, UserSchema } from './schemas/user.schema';
+import { UserService } from "./user.service";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { ConfigurationModule } from "@/config/configuration.module";
+import { JwtStrategy } from "./jwt.strategy";
 
 @Module({
 	imports: [
 		ConfigurationModule,
-		PassportModule.register({ defaultStrategy: 'jwt' }),
 		JwtModule.registerAsync({
-			imports: [ConfigModule],
 			useFactory: async (configService: ConfigService) => {
 				return {
 					//TODO: replace this by configService later
-					secret: process.env.JWT_SECRET,
+					secret: configService.get('JWT_SECRET'),
 					signOptions: {
 						expiresIn: '100d',
 					},
 				}
 			},
+			inject: [ConfigService],
 		}),
 		MongooseModule.forFeature([
 			{ name: UserModel.name, schema: UserSchema },
 		]),
 	],
 	exports: [UserService],
-	providers: [UserService],
+	providers: [UserService, JwtStrategy],
 })
-export class DAOModule { }
+export class UserModule { }
