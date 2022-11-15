@@ -19,7 +19,7 @@ export class UserController {
 
 	@Get('about')
 	@UseGuards(JwtAuthGuard)
-	getMyGroups(@Req() req) {
-		return this.userService.getMyGroups(req.user._id);
+	getInfoAboutMe(@Req() req) {
+		return this.userService.findById(req.user._id);
 	}
 }

@@ -43,7 +43,7 @@ export class UserService {
 			(userId, { $addToSet: { groups: groupId } }, { new: true });
 	}
 
-	getMyGroups(userId: string) {
+	findById(userId: string) {
 		return this.userModel.findById(userId).populate({
 			'path': 'groups', model: GroupModel.name
 		});
