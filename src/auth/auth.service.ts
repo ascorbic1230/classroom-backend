@@ -91,6 +91,7 @@ export class AuthService {
 			user = await this.userService.create({
 				email: email,
 				password: hashPassword('123456'),
+				isEmailVerified: true,
 			}
 			);
 		}

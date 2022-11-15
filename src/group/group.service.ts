@@ -4,10 +4,11 @@ import { Model } from 'mongoose';
 import { get } from 'lodash';
 import { GroupModel, GroupDocument } from './schemas/group.schema';
 import { sanitizePageSize } from "@/utils";
+import { UserService } from "@/user/user.service";
 @Injectable()
 export class GroupService {
 
-	constructor(@InjectModel(GroupModel.name) private readonly groupModel: Model<GroupDocument>) { }
+	constructor(@InjectModel(GroupModel.name) private readonly groupModel: Model<GroupDocument>, private readonly userService: UserService) { }
 
 	async findAll(query: any): Promise<any> {
 		const _size = Number(get(query, 'size', 10));
@@ -35,5 +36,30 @@ export class GroupService {
 				totalRows: total,
 			},
 		};
+	}
+
+	async create(query: any, user): Promise<any> {
+		const { name, description } = query;
+		if (!name) throw new HttpException('name is required', HttpStatus.BAD_REQUEST);
+		const group = await this.groupModel.create({
+			name,
+			description,
+			userCreated: user._id,
+			userUpdated: user._id,
+			users: [user._id],
+		});
+		await this.userService.joinGroup(user._id, group._id);
+		return group;
+	}
+
+	async update(id: string, query: any): Promise<any> {
+		const { _id, name, description } = query;
+		if (!_id) throw new HttpException('_id is required', HttpStatus.BAD_REQUEST);
+		const group = await this.groupModel.findOneAndUpdate({ _id }, {
+			name,
+			description,
+			userUpdated: id,
+		}, { new: true });
+		return group;;
 	}
 }

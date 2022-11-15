@@ -6,6 +6,7 @@ import { UserService } from "./user.service";
 import { ConfigService } from "@nestjs/config";
 import { ConfigurationModule } from "@/config/configuration.module";
 import { JwtStrategy } from "./jwt.strategy";
+import { UserController } from "./user.controller";
 
 @Module({
 	imports: [
@@ -25,6 +26,7 @@ import { JwtStrategy } from "./jwt.strategy";
 			{ name: UserModel.name, schema: UserSchema },
 		]),
 	],
+	controllers: [UserController],
 	exports: [UserService],
 	providers: [UserService, JwtStrategy],
 })

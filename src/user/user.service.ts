@@ -33,7 +33,16 @@ export class UserService {
 	}
 
 	generateJWT(user: any) {
-		const payload = { email: user.email, displayName: user.displayName };
+		const payload = { email: user.email, name: user.name };
 		return this.jwtService.sign(payload);
+	}
+
+	joinGroup(userId: string, groupId: string) {
+		return this.userModel.findByIdAndUpdate
+			(userId, { $addToSet: { groups: groupId } }, { new: true });
+	}
+
+	getMyGroups(userId: string) {
+		return this.userModel.findById(userId).populate('groups');
 	}
 }
