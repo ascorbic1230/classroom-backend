@@ -5,6 +5,7 @@ import { UserService } from "./user.service";
 export class UserController {
 	constructor(private readonly userService: UserService) { }
 
+	//Admin Route
 	@Get()
 	@UseGuards(JwtAuthGuard)
 	getUser(@Query() query: any) {

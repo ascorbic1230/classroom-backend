@@ -1,18 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserModel, UserDocument } from './schemas/user.schema';
 import { JwtService } from "@nestjs/jwt";
 import { GroupModel } from "@/group/schemas/group.schema";
+import { GroupService } from "@/group/group.service";
+import { forwardRef } from "@nestjs/common/utils";
 
 @Injectable()
 export class UserService {
 	constructor(
 		@InjectModel(UserModel.name)
 		private userModel: Model<UserDocument>,
-		private jwtService: JwtService,
+		private jwtService: JwtService
 	) { }
 
+	//Admin Route
 	findAll(filter) {
 		return this.userModel.find(filter, { password: 0 });
 	}
@@ -38,14 +41,19 @@ export class UserService {
 		return this.jwtService.sign(payload);
 	}
 
-	joinGroup(userId: string, groupId: string) {
-		return this.userModel.findByIdAndUpdate
+	async joinGroup(userId: string, groupId: string) {
+		return await this.userModel.findByIdAndUpdate
 			(userId, { $addToSet: { groups: groupId } }, { new: true });
 	}
 
-	findById(userId: string) {
-		return this.userModel.findById(userId).populate({
+	async findById(userId: string) {
+		return await this.userModel.findById(userId);
+	}
+
+	async findMyGroup(userId: string) {
+		const myInfo = await this.userModel.findById(userId).populate({
 			'path': 'groups', model: GroupModel.name
 		});
+		return myInfo.groups;
 	}
 }

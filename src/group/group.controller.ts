@@ -5,12 +5,26 @@ import { GroupService } from "./group.service";
 export class GroupController {
 	constructor(private readonly groupService: GroupService) { }
 
+	//Admin Route
 	@Get()
 	@UseGuards(JwtAuthGuard)
 	getGroup(@Query() query: any) {
 		return this.groupService.findAll(query);
 	}
 
+	@Get('my-group')
+	@UseGuards(JwtAuthGuard)
+	getMyGroup(@Req() req) {
+		return this.groupService.findMyGroup(req.user._id);
+	}
+
+	@Get('my-created-group')
+	@UseGuards(JwtAuthGuard)
+	getMyCreatedGroup(@Req() req) {
+		return this.groupService.findMyCreatedGroup(req.user._id);
+	}
+
+	//Admin Route
 	@Get(':id')
 	@UseGuards(JwtAuthGuard)
 	getGroupById(@Req() req) {

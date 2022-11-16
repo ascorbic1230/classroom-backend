@@ -11,6 +11,7 @@ export class GroupService {
 
 	constructor(@InjectModel(GroupModel.name) private readonly groupModel: Model<GroupDocument>, private readonly userService: UserService) { }
 
+	//Admin Route
 	async findAll(query: any): Promise<any> {
 		const _size = Number(get(query, 'size', 10));
 		const _page = Number(get(query, 'page', 1));
@@ -39,6 +40,7 @@ export class GroupService {
 		};
 	}
 
+	//Admin Route
 	async findById(id: string): Promise<any> {
 		const group = await this.groupModel
 			.findById(id)
@@ -74,5 +76,15 @@ export class GroupService {
 			userUpdated: id,
 		}, { new: true });
 		return group;;
+	}
+
+	async findMyCreatedGroup(userId: string): Promise<any> {
+		const groups = await this.groupModel.find({ userCreated: userId }).lean();
+		return groups;
+	}
+
+	async findMyGroup(userId: string): Promise<any> {
+		const groups = await this.userService.findMyGroup(userId);
+		return groups;
 	}
 }
