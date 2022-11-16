@@ -27,7 +27,7 @@ export class AuthController {
 		const user = await this.authService.signUp(body);
 		return {
 			data: user,
-			message: 'Sign Up successfully',
+			message: 'Please check your email to confirm your account',
 		};
 	}
 

@@ -9,6 +9,7 @@ import { UserService } from "@/user/user.service";
 import { hashPassword, validatePassword } from "@/utils";
 import { ConfigService } from "@nestjs/config";
 import { OAuth2Client } from "google-auth-library";
+import { MailService } from "@/mail/mail.service";
 
 @Injectable()
 export class AuthService {
@@ -16,8 +17,9 @@ export class AuthService {
 	private googleClient: OAuth2Client;
 
 	constructor(
-		private userService: UserService,
+		private readonly userService: UserService,
 		private readonly configService: ConfigService,
+		private readonly mailService: MailService
 	) {
 		this.googleClient = new OAuth2Client('854978946487-4ghr067l2tv525p5jjs4ol6gbhiv8gkg.apps.googleusercontent.com',
 			'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',
@@ -58,7 +60,9 @@ export class AuthService {
 			email: dto.email,
 			password: hashPassword(dto.password),
 		});
-
+		//send email
+		const confirmationToken = this.userService.generateJWTAsVerificationCode(newUser);
+		await this.mailService.sendUserConfirmation(newUser, confirmationToken);
 		return {
 			id: newUser._id,
 			email: newUser.email

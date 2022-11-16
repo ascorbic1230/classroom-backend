@@ -41,6 +41,12 @@ export class UserService {
 		return this.jwtService.sign(payload);
 	}
 
+	//should use redis instead
+	generateJWTAsVerificationCode(user: any) {
+		const payload = { email: user.email, name: user.name, time: Date.now() };
+		return this.jwtService.sign(payload, { expiresIn: '1h' });
+	}
+
 	async joinGroup(userId: string, groupId: string) {
 		return await this.userModel.findByIdAndUpdate
 			(userId, { $addToSet: { groups: groupId } }, { new: true });
