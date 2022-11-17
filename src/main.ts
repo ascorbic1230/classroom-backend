@@ -19,7 +19,7 @@ async function bootstrap() {
 			whitelist: true,
 		}),
 	);
-	const port = configService.get('port');
+	const port = configService.get('port') || 3000;
 	await app.listen(port);
 	console.log(`Application is running on: ${await app.getUrl()}`);
 }
