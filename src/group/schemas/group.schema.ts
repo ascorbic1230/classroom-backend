@@ -14,7 +14,7 @@ export class GroupModel {
 	@Prop({ type: String, default: 'No Description' })
 	description: string;
 
-	@Prop({ type: [{ userId: { type: Types.ObjectId, ref: 'users' }, role: { type: String, enum: RoleInGroup } }] })
+	@Prop()
 	usersAndRoles: { userId: Types.ObjectId, role: RoleInGroup }[];
 
 	@Prop({ type: String, default: null })

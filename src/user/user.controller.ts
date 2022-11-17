@@ -8,19 +8,29 @@ export class UserController {
 	//Admin Route
 	@Get()
 	@UseGuards(JwtAuthGuard)
-	getUser(@Query() query: any) {
-		return this.userService.findAll(query);
-	}
-
-	@Put()
-	@UseGuards(JwtAuthGuard)
-	updateUser(@Req() req, @Body() body: any) {
-		return this.userService.update(req.user._id, body);
+	async getUser(@Query() query: any) {
+		const user = await this.userService.findAll(query);
+		return {
+			statusCode: 200,
+			data: user,
+			message: 'Get all users successfully'
+		};
 	}
 
 	@Get('me')
 	@UseGuards(JwtAuthGuard)
-	getInfoAboutMe(@Req() req) {
-		return this.userService.findById(req.user._id);
+	async getInfoAboutMe(@Req() req) {
+		const user = await this.userService.findById(req.user._id);
+		return {
+			statusCode: 200,
+			data: user,
+			message: 'Get user\'s info successfully'
+		};
+	}
+
+	@Put('me')
+	@UseGuards(JwtAuthGuard)
+	updateUser(@Req() req, @Body() body: any) {
+		return this.userService.update(req.user._id, body);
 	}
 }

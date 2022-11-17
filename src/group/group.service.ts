@@ -45,19 +45,11 @@ export class GroupService {
 	}
 
 	//Admin Route
-	async findById(id: string): Promise<any> {
-		const group = await this.groupModel
-			.findById(id)
-			.populate('usersAndRoles.userId')
-		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
-		return {
-			statusCode: HttpStatus.OK,
-			data: group,
-			message: 'Find group successfully',
-		}
+	findById(id: string) {
+		return this.groupModel.findById(id).lean();
 	}
 
-	async create(query: any, user: any): Promise<any> {
+	async create(query: any, user: any) {
 		const { name, description } = query;
 		if (!name) throw new HttpException('name is required', HttpStatus.BAD_REQUEST);
 		const group = await this.groupModel.create({
@@ -71,70 +63,41 @@ export class GroupService {
 			}]
 		});
 		await this.userService.joinGroup(user._id, group._id);
-		return {
-			statusCode: HttpStatus.OK,
-			data: group,
-			message: 'Create group successfully',
-		}
+		return group;
 	}
 
-	async update(id: string, query: any): Promise<any> {
+	update(id: string, query: any) {
 		const { _id, name, description } = query;
 		if (!_id) throw new HttpException('_id is required', HttpStatus.BAD_REQUEST);
-		const group = await this.groupModel.findOneAndUpdate({ _id }, {
+		return this.groupModel.findOneAndUpdate({ _id }, {
 			name,
 			description,
 			userUpdated: id,
 		}, { new: true });
-		return {
-			statusCode: HttpStatus.OK,
-			data: group,
-			message: 'Update group successfully',
-		}
 	}
 
-	async findMyCreatedGroup(userId: string): Promise<any> {
-		const groups = await this.groupModel.find({ userCreated: userId }).lean();
-		return {
-			statusCode: HttpStatus.OK,
-			data: groups,
-			message: 'Get my created group successfully',
-		}
+	findMyCreatedGroup(userId: string) {
+		return this.groupModel.find({ userCreated: userId }).lean();
 	}
 
-	async findMyGroup(userId: string): Promise<any> {
-		const groups = await this.userService.findMyGroup(userId);
-		return {
-			statusCode: HttpStatus.OK,
-			data: groups,
-			message: 'Get my group successfully',
-		}
+	findMyGroup(userId: string): Promise<any> {
+		return this.userService.findMyGroup(userId);
 	}
 
 	//create link to invite user to group
 	async getInviteLink(userId: string, groupId: string): Promise<any> {
-		const group = await this.groupModel
-			.findById(groupId)
-			.lean();
+		const group = await this.groupModel.findById(groupId).lean();
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
-		console.log('group', group);
-		const isMember = group.usersAndRoles.find(item => item.userId.toString() === userId);
-		console.log('group', group);
-		console.log('userId', userId);
-		if (!isMember) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
-		const inviteLink = `${this.configService.get('BASE_URL')}/group/${groupId}/join`;
-		return {
-			statusCode: HttpStatus.OK,
-			data: inviteLink,
-			message: 'Get invite link successfully',
-		}
+		const isInGroup = group.usersAndRoles.find(item => item.userId.toString() === userId);
+		if (!isInGroup) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
+		return `${this.configService.get('BASE_URL')}/group/${groupId}/join`;
 	}
 
 	async joinGroup(userId: string, groupId: string): Promise<any> {
-		const isInGroup = await this.groupModel.findOne({ _id: groupId, 'usersAndRoles.userId': userId });
-		if (isInGroup) throw new HttpException('You are already in this group', HttpStatus.BAD_REQUEST);
 		const group = await this.groupModel.findById(groupId).lean();
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
+		const isInGroup = await group.usersAndRoles.find(item => item.userId.toString() === userId);
+		if (isInGroup) throw new HttpException('You are already in this group', HttpStatus.BAD_REQUEST);
 		const user = await this.userService.findById(userId);
 		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 		await this.groupModel.findOneAndUpdate({
@@ -147,11 +110,7 @@ export class GroupService {
 				}
 			}
 		});
-		await this.userService.joinGroup(userId, groupId);
-		return {
-			statusCode: HttpStatus.OK,
-			message: 'Join group successfully'
-		}
+		return await this.userService.joinGroup(userId, groupId);
 	}
 
 }
