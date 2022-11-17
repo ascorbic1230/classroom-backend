@@ -27,7 +27,7 @@ export class AuthController {
 		const user = await this.authService.signUp(body);
 		return {
 			data: user,
-			message: 'Please check your email to confirm your account',
+			message: 'Please check your email to confirm your account (Check spam folder too)',
 		};
 	}
 
@@ -50,4 +50,15 @@ export class AuthController {
 			message: 'Login successfully',
 		});
 	};
+
+	@Get('/confirm')
+	async confirmAccount(@Query('token') token) {
+		const user = await this.authService.confirmAccount(token);
+
+		//return successful message then redirect to login page
+		return {
+			data: user,
+			message: 'Confirm account successfully',
+		};
+	}
 }

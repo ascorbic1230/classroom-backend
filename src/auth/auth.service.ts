@@ -38,6 +38,10 @@ export class AuthService {
 			throw new BadRequestException('Invalid password');
 		}
 
+		if (!user.isEmailVerified) {
+			throw new BadRequestException('Email is not verified');
+		}
+
 		//generate jwt token
 		const token = this.userService.generateJWT(user);
 
@@ -108,5 +112,10 @@ export class AuthService {
 			email: user.email,
 			token: token,
 		};
+	}
+
+	async confirmAccount(token) {
+		const user = await this.userService.verifyEmail(token);
+		return user;
 	}
 }

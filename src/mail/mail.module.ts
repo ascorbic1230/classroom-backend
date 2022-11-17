@@ -5,23 +5,23 @@ import { MailService } from './mail.service';
 import { join } from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
-@Global() // 👈 global module
+@Global()
 @Module({
 	imports: [
 		MailerModule.forRootAsync({
-			// imports: [ConfigModule], // import module if not enabled globally
+			// imports: [ConfigModule],
 			useFactory: async () => ({
 				transport: {
-					host: 'smtp.mail.yahoo.com',
+					host: 'smtp.gmail.com',
 					port: 465,
 					secure: true,
 					auth: {
-						user: 'black_knight_kute@yahoo.com',
-						pass: 'lnqykezmmxouurkj',
+						user: 'tat.classroom.22@gmail.com',
+						pass: 'hkinbaeanjdoesdx',
 					},
 				},
 				defaults: {
-					from: '"No Reply" <black_knight_kute@yahoo.com>',
+					from: '"No Reply" <tat.classroom.22@gmail.com>',
 				},
 				template: {
 					dir: join(__dirname, 'templates'),

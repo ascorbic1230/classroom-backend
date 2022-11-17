@@ -47,6 +47,18 @@ export class UserService {
 		return this.jwtService.sign(payload, { expiresIn: '1h' });
 	}
 
+	//check verification code
+	async verifyEmail(verificationCode: string) {
+		const decoded = this.jwtService.verify(verificationCode);
+		const user = await this.userModel.findOne({ email: decoded.email });
+		if (!user) {
+			throw new Error('User not found');
+		}
+		user.isEmailVerified = true;
+		await user.save();
+		return user;
+	}
+
 	async joinGroup(userId: string, groupId: string) {
 		return await this.userModel.findByIdAndUpdate
 			(userId, { $addToSet: { groups: groupId } }, { new: true });

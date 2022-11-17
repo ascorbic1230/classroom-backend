@@ -14,6 +14,7 @@ import {
 		NestConfigModule.forRoot({
 			load: [configuration],
 			isGlobal: true,
+			//ignoreEnvFile: true,
 			validationSchema,
 			validationOptions: { abortEarly: true },
 		}),
