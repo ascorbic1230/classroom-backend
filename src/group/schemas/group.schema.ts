@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { RoleInGroup } from "@/constants";
 
 export type GroupDocument = GroupModel & Document;
 @Schema({ timestamps: true, collection: 'groups' })
@@ -13,8 +14,8 @@ export class GroupModel {
 	@Prop({ type: String, default: 'No Description' })
 	description: string;
 
-	@Prop({ type: [Types.ObjectId], ref: 'users' })
-	users: Types.ObjectId[];
+	@Prop({ type: [{ userId: { type: Types.ObjectId, ref: 'users' }, role: { type: String, enum: RoleInGroup } }] })
+	usersAndRoles: { userId: Types.ObjectId, role: RoleInGroup }[];
 
 	@Prop({ type: String, default: null })
 	userCreated: string;

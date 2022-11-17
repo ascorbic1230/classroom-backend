@@ -18,7 +18,6 @@ import {
 			validationSchema,
 			validationOptions: { abortEarly: true },
 		}),
-		// mongo
 		MongooseModule.forRootAsync({
 			useFactory: async (config: ConfigService<ConfigSchema>) => ({
 				uri: config.get('MONGODB_URI'),

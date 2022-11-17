@@ -18,7 +18,7 @@ export class UserController {
 		return this.userService.update(req.user._id, body);
 	}
 
-	@Get('about')
+	@Get('me')
 	@UseGuards(JwtAuthGuard)
 	getInfoAboutMe(@Req() req) {
 		return this.userService.findById(req.user._id);

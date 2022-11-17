@@ -42,4 +42,16 @@ export class GroupController {
 	updateGroup(@Req() req, @Body() body: any) {
 		return this.groupService.update(req.user._id, body);
 	}
+
+	@Get(':id/get-invite-link')
+	@UseGuards(JwtAuthGuard)
+	getInviteLink(@Req() req) {
+		return this.groupService.getInviteLink(req.user._id, req.params.id);
+	}
+
+	@Get(':id/join')
+	@UseGuards(JwtAuthGuard)
+	joinGroup(@Req() req) {
+		return this.groupService.joinGroup(req.user._id, req.params.id);
+	}
 }

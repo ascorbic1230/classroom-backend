@@ -17,14 +17,21 @@ export class UserService {
 
 	//Admin Route
 	findAll(filter) {
-		return this.userModel.find(filter, { password: 0 });
+		const result = this.userModel.find(filter, { password: 0 });
+		return {
+			statusCode: 200,
+			data: result,
+			message: 'Get all users successfully'
+		};
 	}
 
 	findByEmail(email: string) {
+		//TODO: change return msg
 		return this.userModel.findOne({ email });
 	}
 
 	create(dto: any) {
+		//TODO: change return msg
 		return this.userModel.create(dto);
 	}
 
@@ -59,19 +66,41 @@ export class UserService {
 		return user;
 	}
 
+	async isInGroup(userId: string, groupId: string) {
+		const user = await this.userModel
+			.findById(userId)
+			.populate('groups')
+			.lean();
+		const group = user.groups.find(group => group._id.toString() === groupId);
+		return !!group;
+	}
+
 	async joinGroup(userId: string, groupId: string) {
 		return await this.userModel.findByIdAndUpdate
 			(userId, { $addToSet: { groups: groupId } }, { new: true });
+		//should change return msg
 	}
 
 	async findById(userId: string) {
-		return await this.userModel.findById(userId);
+		const user = await this.userModel.findById(userId);
+		if (!user) {
+			throw new Error('User not found');
+		}
+		return {
+			statusCode: 200,
+			data: user,
+			message: 'Get my group successfully'
+		};
 	}
 
 	async findMyGroup(userId: string) {
 		const myInfo = await this.userModel.findById(userId).populate({
 			'path': 'groups', model: GroupModel.name
 		});
-		return myInfo.groups;
+		return {
+			statusCode: 200,
+			data: myInfo.groups,
+			message: 'Get my group successfully'
+		};
 	}
 }
