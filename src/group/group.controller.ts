@@ -1,5 +1,6 @@
 import { JwtAuthGuard } from "@/guards/jwt.guard";
-import { Query, Param, Controller, Get, UseGuards, Post, Req, Body, Put, HttpStatus, HttpException } from '@nestjs/common';
+import { Query, Param, Controller, Get, UseGuards, Post, Req, Body, Put, HttpStatus, HttpException, Delete } from '@nestjs/common';
+import { AssignRoleDto } from "./dtos/user-and-role.dto";
 import { GroupService } from "./group.service";
 @Controller('group')
 export class GroupController {
@@ -110,6 +111,28 @@ export class GroupController {
 		return {
 			statusCode: HttpStatus.OK,
 			message: 'Kick user successfully'
+		}
+	}
+
+	//delete group
+	@Delete(':id')
+	@UseGuards(JwtAuthGuard)
+	async deleteGroup(@Req() req) {
+		const result = await this.groupService.deleteGroup(req.user._id, req.params.id);
+		return {
+			statusCode: HttpStatus.OK,
+			message: 'Delete group successfully'
+		}
+	}
+
+	//assign role to user in group
+	@Post(':id/assign-role')
+	@UseGuards(JwtAuthGuard)
+	async assignRole(@Req() req, @Body() userToUpdated: AssignRoleDto) {
+		const result = await this.groupService.assignRole(req.user._id, req.params.id, userToUpdated);
+		return {
+			statusCode: HttpStatus.OK,
+			message: 'Assign role successfully'
 		}
 	}
 }

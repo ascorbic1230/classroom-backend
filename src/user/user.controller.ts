@@ -33,4 +33,15 @@ export class UserController {
 	updateUser(@Req() req, @Body() body: any) {
 		return this.userService.update(req.user._id, body);
 	}
+
+	@Get(':id')
+	@UseGuards(JwtAuthGuard)
+	async getUserById(@Req() req) {
+		const user = await this.userService.findById(req.params.id);
+		return {
+			statusCode: 200,
+			data: user,
+			message: 'Get user\'s info successfully'
+		};
+	}
 }

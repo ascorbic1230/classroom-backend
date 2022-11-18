@@ -1,5 +1,5 @@
 export enum RoleInGroup {
-	OWNER = 'owner',
-	CO_OWNER = 'co-owner',
-	MEMBER = 'member'
+	OWNER = 'OWNER',
+	CO_OWNER = 'CO_OWNER',
+	MEMBER = 'MEMBER',
 }

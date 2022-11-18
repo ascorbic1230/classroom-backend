@@ -8,6 +8,7 @@ import { UserService } from "@/user/user.service";
 import { UserModel } from "@/user/schemas/user.schema";
 import { RoleInGroup } from "@/constants";
 import { ConfigService } from "@nestjs/config";
+import { AssignRoleDto } from "./dtos/user-and-role.dto";
 @Injectable()
 export class GroupService {
 
@@ -116,15 +117,8 @@ export class GroupService {
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
 		const userAndRole = await group.usersAndRoles.find(item => item.userId.toString() === userId);
 		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
-		//if group.usersAndRoles.length === 1 => delete group
-		if (group.usersAndRoles.length === 1) {
-			await this.userService.leaveGroup(userId, groupId);
-			return await this.groupModel.deleteOne({
-				_id: groupId
-			});
-		}
 		//if role is owner, can not leave group
-		if (userAndRole.role === RoleInGroup.OWNER) throw new HttpException('Cannot leave group since you are owner. Please transfer ownership to other member', HttpStatus.BAD_REQUEST);
+		if (userAndRole.role === RoleInGroup.OWNER) throw new HttpException('Cannot leave group since you are owner. Please delete group instead', HttpStatus.BAD_REQUEST);
 		console.log('userAndRoleToKick', userAndRole);
 		await this.groupModel.updateOne({
 			_id: groupId
@@ -147,7 +141,7 @@ export class GroupService {
 		if (!userAndRole) throw new HttpException('You are not owner or co-owner of this group', HttpStatus.BAD_REQUEST);
 		const userAndRoleToKick = await group.usersAndRoles.find(item => item.userId.toString() === userIdToKick);
 		if (!userAndRoleToKick) throw new HttpException('User to kick is not a member of this group', HttpStatus.BAD_REQUEST);
-		//if role is owner, can not kick
+		//can not kick owner
 		if (userAndRoleToKick.role === RoleInGroup.OWNER) throw new HttpException('Cannot kick owner', HttpStatus.BAD_REQUEST);
 		await this.groupModel.updateOne({
 			_id: groupId
@@ -159,5 +153,36 @@ export class GroupService {
 			}
 		});
 		return await this.userService.leaveGroup(userIdToKick, groupId);
+	}
+
+	async deleteGroup(userId: string, groupId: string): Promise<any> {
+		const group = await this.groupModel.findById(groupId).lean();
+		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
+		if (group.userCreated.toString() !== userId) throw new HttpException('You are not owner of this group', HttpStatus.BAD_REQUEST);
+		if (group.usersAndRoles.length > 1) throw new HttpException('Cannot delete group since there are other members', HttpStatus.BAD_REQUEST);
+		await this.userService.leaveGroup(userId, groupId);
+		return await this.groupModel.deleteOne({
+			_id: groupId
+		});
+	}
+
+	//assign role to user in Group
+	async assignRole(userId: string, groupId: string, userToAssignRole: AssignRoleDto): Promise<any> {
+		const group = await this.groupModel.findById(groupId).lean();
+		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
+		const userAndRole = await group.usersAndRoles.find(item => item.userId.toString() === userId && (item.role === RoleInGroup.OWNER || item.role === RoleInGroup.CO_OWNER));
+		if (!userAndRole) throw new HttpException('You are not owner or co-owner of this group', HttpStatus.BAD_REQUEST);
+		const userAndRoleToAssign = await group.usersAndRoles.find(item => item.userId.toString() === userToAssignRole.userId);
+		if (!userAndRoleToAssign) throw new HttpException('User to assign is not a member of this group', HttpStatus.BAD_REQUEST);
+		//can not assign owner a new role
+		if (userAndRoleToAssign.role === RoleInGroup.OWNER) throw new HttpException('Cannot assign owner', HttpStatus.BAD_REQUEST);
+		return await this.groupModel.updateOne({
+			_id: groupId,
+			'usersAndRoles.userId': userToAssignRole.userId
+		}, {
+			$set: {
+				'usersAndRoles.$.role': userToAssignRole.role
+			}
+		});
 	}
 }
