@@ -10,6 +10,7 @@ import { hashPassword, validatePassword } from "@/utils";
 import { ConfigService } from "@nestjs/config";
 import { OAuth2Client } from "google-auth-library";
 import { MailService } from "@/mail/mail.service";
+import { LoginDto } from "./dtos/auth.dto";
 
 @Injectable()
 export class AuthService {
@@ -27,14 +28,14 @@ export class AuthService {
 	}
 
 
-	async login(dto) {
-		const user = await this.userService.findByEmail(dto.email);
+	async login(data: LoginDto) {
+		const user = await this.userService.findByEmail(data.email);
 
 		if (!user) {
 			throw new BadRequestException('Invalid email');
 		}
 
-		if (!validatePassword(dto.password, user.password)) {
+		if (!validatePassword(data.password, user.password)) {
 			throw new BadRequestException('Invalid password');
 		}
 
@@ -54,16 +55,16 @@ export class AuthService {
 		};
 	}
 
-	async signUp(dto) {
-		const user = await this.userService.findByEmail(dto.email);
+	async signUp(data: LoginDto) {
+		const user = await this.userService.findByEmail(data.email);
 
 		if (user) {
-			throw new BadRequestException('Username already exists');
+			throw new BadRequestException('Email already exists');
 		}
 
 		const newUser = await this.userService.create({
-			email: dto.email,
-			password: hashPassword(dto.password),
+			email: data.email,
+			password: hashPassword(data.password),
 		});
 		//TODO: uncomment this when app is ready for production
 		// //send email

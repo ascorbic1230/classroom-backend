@@ -8,13 +8,14 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from "@nestjs/config";
 import { AuthService } from './auth.service';
+import { LoginDto } from "./dtos/auth.dto";
 
 @Controller('/auth')
 export class AuthController {
 	constructor(private authService: AuthService, private configService: ConfigService) { }
 
 	@Post('/sign-in')
-	async login(@Body() body, @Res() res) {
+	async login(@Res() res, @Body() body: LoginDto) {
 		const user = await this.authService.login(body);
 		res.cookie('token', user.token);
 		res.json({
@@ -24,7 +25,7 @@ export class AuthController {
 	}
 
 	@Post('/sign-up')
-	async signUp(@Body() body) {
+	async signUp(@Body() body: LoginDto) {
 		const user = await this.authService.signUp(body);
 		return {
 			data: user,
