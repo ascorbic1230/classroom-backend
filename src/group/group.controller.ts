@@ -1,5 +1,5 @@
 import { JwtAuthGuard } from "@/guards/jwt.guard";
-import { Query, Controller, Get, UseGuards, Post, Req, Body, Put, HttpStatus, HttpException } from '@nestjs/common';
+import { Query, Param, Controller, Get, UseGuards, Post, Req, Body, Put, HttpStatus, HttpException } from '@nestjs/common';
 import { GroupService } from "./group.service";
 @Controller('group')
 export class GroupController {
@@ -86,7 +86,7 @@ export class GroupController {
 		const result = await this.groupService.joinGroup(req.user._id, req.params.id);
 		return {
 			statusCode: HttpStatus.OK,
-			data: result,
+			// data: result,
 			message: 'Join group successfully'
 		}
 	}
@@ -97,8 +97,19 @@ export class GroupController {
 		const result = await this.groupService.leaveGroup(req.user._id, req.params.id);
 		return {
 			statusCode: HttpStatus.OK,
-			data: result,
+			// data: result,
 			message: 'Leave group successfully'
+		}
+	}
+
+	//kick user out of group
+	@Get(':id/kick')
+	@UseGuards(JwtAuthGuard)
+	async kickUser(@Req() req, @Query('userId') userIdToKick: string) {
+		const result = await this.groupService.kickUser(req.user._id, req.params.id, userIdToKick);
+		return {
+			statusCode: HttpStatus.OK,
+			message: 'Kick user successfully'
 		}
 	}
 }

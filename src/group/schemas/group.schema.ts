@@ -15,7 +15,7 @@ export class GroupModel {
 	description: string;
 
 	@Prop()
-	usersAndRoles: { userId: Types.ObjectId, role: RoleInGroup }[];
+	usersAndRoles: { userId: Types.ObjectId, role: RoleInGroup, _id: Types.ObjectId }[];
 
 	@Prop({ type: String, default: null })
 	userCreated: string;

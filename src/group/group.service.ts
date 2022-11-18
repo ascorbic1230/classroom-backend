@@ -98,7 +98,7 @@ export class GroupService {
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
 		const userAndRole = await group.usersAndRoles.find(item => item.userId.toString() === userId);
 		if (userAndRole) throw new HttpException('You are already in this group', HttpStatus.BAD_REQUEST);
-		await this.groupModel.findOneAndUpdate({
+		await this.groupModel.updateOne({
 			_id: groupId
 		}, {
 			$push: {
@@ -116,17 +116,48 @@ export class GroupService {
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
 		const userAndRole = await group.usersAndRoles.find(item => item.userId.toString() === userId);
 		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
+		//if group.usersAndRoles.length === 1 => delete group
+		if (group.usersAndRoles.length === 1) {
+			await this.userService.leaveGroup(userId, groupId);
+			return await this.groupModel.deleteOne({
+				_id: groupId
+			});
+		}
 		//if role is owner, can not leave group
 		if (userAndRole.role === RoleInGroup.OWNER) throw new HttpException('Cannot leave group since you are owner. Please transfer ownership to other member', HttpStatus.BAD_REQUEST);
-		await this.groupModel.findOneAndUpdate({
+		console.log('userAndRoleToKick', userAndRole);
+		await this.groupModel.updateOne({
 			_id: groupId
 		}, {
 			$pull: {
 				usersAndRoles: {
-					userId,
+					_id: userAndRole._id
 				}
 			}
 		});
+
 		return await this.userService.leaveGroup(userId, groupId);
+	}
+
+	async kickUser(userId: string, groupId: string, userIdToKick: string): Promise<any> {
+		console.log('id To kick', userIdToKick);
+		const group = await this.groupModel.findById(groupId).lean();
+		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
+		const userAndRole = await group.usersAndRoles.find(item => item.userId.toString() === userId && (item.role === RoleInGroup.OWNER || item.role === RoleInGroup.CO_OWNER));
+		if (!userAndRole) throw new HttpException('You are not owner or co-owner of this group', HttpStatus.BAD_REQUEST);
+		const userAndRoleToKick = await group.usersAndRoles.find(item => item.userId.toString() === userIdToKick);
+		if (!userAndRoleToKick) throw new HttpException('User to kick is not a member of this group', HttpStatus.BAD_REQUEST);
+		//if role is owner, can not kick
+		if (userAndRoleToKick.role === RoleInGroup.OWNER) throw new HttpException('Cannot kick owner', HttpStatus.BAD_REQUEST);
+		await this.groupModel.updateOne({
+			_id: groupId
+		}, {
+			$pull: {
+				usersAndRoles: {
+					_id: userAndRole._id
+				}
+			}
+		});
+		return await this.userService.leaveGroup(userIdToKick, groupId);
 	}
 }
