@@ -41,14 +41,7 @@ export class AuthController {
 	async loginGoogleCallback(@Query('code') code, @Res() res) {
 		const user = await this.authService.loginGoogle(code);
 		res.cookie('token', user.token);
-		// return {
-		// 	data: user,
-		// 	message: 'Login successfully',
-		// };
-		res.json({
-			data: user,
-			message: 'Login successfully',
-		});
+		return res.redirect('http://google.com');
 	};
 
 	@Get('/confirm')
