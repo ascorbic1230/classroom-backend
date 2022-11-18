@@ -6,11 +6,12 @@ import {
 	Query,
 	Res,
 } from '@nestjs/common';
+import { ConfigService } from "@nestjs/config";
 import { AuthService } from './auth.service';
 
 @Controller('/auth')
 export class AuthController {
-	constructor(private authService: AuthService) { }
+	constructor(private authService: AuthService, private configService: ConfigService) { }
 
 	@Post('/sign-in')
 	async login(@Body() body, @Res() res) {
@@ -41,7 +42,7 @@ export class AuthController {
 	async loginGoogleCallback(@Query('code') code, @Res() res) {
 		const user = await this.authService.loginGoogle(code);
 		res.cookie('token', user.token);
-		return res.redirect('http://google.com');
+		return res.redirect(this.configService.get('FRONTEND_URL'));
 	};
 
 	@Get('/confirm')

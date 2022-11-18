@@ -91,6 +91,7 @@ export class GroupService {
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
 		const userAndRole = group.usersAndRoles.find(item => item.userId.toString() === userId);
 		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
+		//TODO: redirect to frontend, display join group popup. On Click, call api {BASE_URL}/group/${groupId}/join
 		return `${this.configService.get('BASE_URL')}/group/${groupId}/join`;
 	}
 
