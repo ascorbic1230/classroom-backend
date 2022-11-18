@@ -90,4 +90,15 @@ export class GroupController {
 			message: 'Join group successfully'
 		}
 	}
+
+	@Get(':id/leave')
+	@UseGuards(JwtAuthGuard)
+	async leaveGroup(@Req() req) {
+		const result = await this.groupService.leaveGroup(req.user._id, req.params.id);
+		return {
+			statusCode: HttpStatus.OK,
+			data: result,
+			message: 'Leave group successfully'
+		}
+	}
 }

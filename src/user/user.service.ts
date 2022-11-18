@@ -69,6 +69,11 @@ export class UserService {
 		return await this.userModel.findByIdAndUpdate(userId, { $addToSet: { groups: groupId } }, { new: true });
 	}
 
+	async leaveGroup(userId: string, groupId: string) {
+		return await this.userModel.findByIdAndUpdate
+			(userId, { $pull: { groups: groupId } }, { new: true });
+	}
+
 	async findById(userId: string) {
 		const user = await this.userModel.findById(userId);
 		if (!user) {

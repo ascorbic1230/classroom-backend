@@ -38,9 +38,10 @@ export class AuthService {
 			throw new BadRequestException('Invalid password');
 		}
 
-		if (!user.isEmailVerified) {
-			throw new BadRequestException('Email is not verified');
-		}
+		//TODO: uncomment this when app is ready for production
+		// if (!user.isEmailVerified) {
+		// 	throw new BadRequestException('Email is not verified');
+		// }
 
 		//generate jwt token
 		const token = this.userService.generateJWT(user);
@@ -64,9 +65,10 @@ export class AuthService {
 			email: dto.email,
 			password: hashPassword(dto.password),
 		});
-		//send email
-		const confirmationToken = this.userService.generateJWTAsVerificationCode(newUser);
-		await this.mailService.sendUserConfirmation(newUser, confirmationToken);
+		//TODO: uncomment this when app is ready for production
+		// //send email
+		// const confirmationToken = this.userService.generateJWTAsVerificationCode(newUser);
+		// await this.mailService.sendUserConfirmation(newUser, confirmationToken);
 		return {
 			id: newUser._id,
 			email: newUser.email

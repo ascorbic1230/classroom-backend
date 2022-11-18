@@ -88,18 +88,16 @@ export class GroupService {
 	async getInviteLink(userId: string, groupId: string): Promise<any> {
 		const group = await this.groupModel.findById(groupId).lean();
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
-		const isInGroup = group.usersAndRoles.find(item => item.userId.toString() === userId);
-		if (!isInGroup) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
+		const userAndRole = group.usersAndRoles.find(item => item.userId.toString() === userId);
+		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
 		return `${this.configService.get('BASE_URL')}/group/${groupId}/join`;
 	}
 
 	async joinGroup(userId: string, groupId: string): Promise<any> {
 		const group = await this.groupModel.findById(groupId).lean();
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
-		const isInGroup = await group.usersAndRoles.find(item => item.userId.toString() === userId);
-		if (isInGroup) throw new HttpException('You are already in this group', HttpStatus.BAD_REQUEST);
-		const user = await this.userService.findById(userId);
-		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+		const userAndRole = await group.usersAndRoles.find(item => item.userId.toString() === userId);
+		if (userAndRole) throw new HttpException('You are already in this group', HttpStatus.BAD_REQUEST);
 		await this.groupModel.findOneAndUpdate({
 			_id: groupId
 		}, {
@@ -113,4 +111,22 @@ export class GroupService {
 		return await this.userService.joinGroup(userId, groupId);
 	}
 
+	async leaveGroup(userId: string, groupId: string): Promise<any> {
+		const group = await this.groupModel.findById(groupId).lean();
+		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
+		const userAndRole = await group.usersAndRoles.find(item => item.userId.toString() === userId);
+		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
+		//if role is owner, can not leave group
+		if (userAndRole.role === RoleInGroup.OWNER) throw new HttpException('Cannot leave group since you are owner. Please transfer ownership to other member', HttpStatus.BAD_REQUEST);
+		await this.groupModel.findOneAndUpdate({
+			_id: groupId
+		}, {
+			$pull: {
+				usersAndRoles: {
+					userId,
+				}
+			}
+		});
+		return await this.userService.leaveGroup(userId, groupId);
+	}
 }
