@@ -5,7 +5,7 @@ export class AssignRoleDto {
 	@IsString()
 	@IsNotEmpty()
 	@IsMongoId()
-	userId: string;
+	user: string;
 
 	@IsEnum(RoleInGroup, { message: 'Role must be CO_OWNER or MEMBER' })
 	@IsNotIn([RoleInGroup.OWNER], { message: 'A group can only have one OWNER' })
