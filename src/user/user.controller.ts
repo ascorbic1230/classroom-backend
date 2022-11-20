@@ -1,6 +1,7 @@
 import { ChangePasswordDto } from "@/auth/dtos/auth.dto";
 import { JwtAuthGuard } from "@/guards/jwt.guard";
 import { Query, Controller, Get, UseGuards, Post, Req, Body, Put } from '@nestjs/common';
+import { UpdateAccountDto } from "./dtos/update-account.dto";
 import { UserService } from "./user.service";
 @Controller('user')
 export class UserController {
@@ -31,7 +32,7 @@ export class UserController {
 
 	@Put('me')
 	@UseGuards(JwtAuthGuard)
-	updateUser(@Req() req, @Body() body: any) {
+	updateUser(@Req() req, @Body() body: UpdateAccountDto) {
 		return this.userService.update(req.user._id, body);
 	}
 

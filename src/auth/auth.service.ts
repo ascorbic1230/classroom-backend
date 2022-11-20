@@ -103,7 +103,7 @@ export class AuthService {
 			user = await this.userService.create({
 				email: email,
 				name: name,
-				password: '1',
+				password: 'nopassword',
 				isEmailVerified: true,
 			}
 			);

@@ -6,6 +6,7 @@ import { JwtService } from "@nestjs/jwt";
 import { GroupModel } from "@/group/schemas/group.schema";
 import { ChangePasswordDto } from "@/auth/dtos/auth.dto";
 import { hashPassword } from "@/utils";
+import { UpdateAccountDto } from "./dtos/update-account.dto";
 @Injectable()
 export class UserService {
 	constructor(
@@ -27,8 +28,10 @@ export class UserService {
 		return this.userModel.create(dto);
 	}
 
-	async update(id: string, dto: any) {
-		return await this.userModel.findByIdAndUpdate(id, dto, { new: true });
+	async update(id: string, dto: UpdateAccountDto) {
+		const result = await this.userModel.findByIdAndUpdate(id, dto, { new: true });
+		delete result.password;
+		return result;
 	}
 
 	delete(id: string) {
