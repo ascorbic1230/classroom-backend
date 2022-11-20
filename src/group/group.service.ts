@@ -205,7 +205,7 @@ export class GroupService {
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
 		const userAndRole = group.usersAndRoles.find(item => item.user.toString() === user._id);
 		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
-		const url = this.generateInviteLinkByJWT({ groupId, userId: user._id });
+		const url = this.generateInviteLinkByJWT({ groupId, emailToInvite });
 		await this.mailService.sendInviteEmail(emailToInvite, url, group.name, user);
 	}
 }
