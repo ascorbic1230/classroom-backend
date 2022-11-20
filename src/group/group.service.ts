@@ -101,13 +101,12 @@ export class GroupService {
 		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
 		//if role is owner, can not leave group
 		if (userAndRole.role === RoleInGroup.OWNER) throw new HttpException('Cannot leave group since you are owner. Please delete group instead', HttpStatus.BAD_REQUEST);
-		console.log('userAndRoleToKick', userAndRole);
 		await this.groupModel.updateOne({
 			_id: groupId
 		}, {
 			$pull: {
 				usersAndRoles: {
-					_id: userAndRole._id
+					user: userAndRole.user
 				}
 			}
 		});
@@ -116,7 +115,6 @@ export class GroupService {
 	}
 
 	async kickUser(userId: string, groupId: string, userIdToKick: string): Promise<any> {
-		console.log('id To kick', userIdToKick);
 		const group = await this.groupModel.findById(groupId).lean();
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
 		const userAndRole = await group.usersAndRoles.find(item => item.user.toString() === userId && (item.role === RoleInGroup.OWNER || item.role === RoleInGroup.CO_OWNER));
@@ -130,7 +128,7 @@ export class GroupService {
 		}, {
 			$pull: {
 				usersAndRoles: {
-					_id: userAndRole._id
+					user: userAndRoleToKick.user
 				}
 			}
 		});
@@ -174,32 +172,32 @@ export class GroupService {
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
 		const userAndRole = group.usersAndRoles.find(item => item.user.toString() === userId);
 		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
-		return this.generateInviteLinkByJWT(groupId);
+		return this.generateInviteLinkByJWT({ groupId });
 	}
 
-	generateInviteLinkByJWT(groupId: string) {
-		const payload = { groupId };
+	generateInviteLinkByJWT(payload: any) {
 		const token = this.jwtService.sign(payload);
 		return `${process.env.BASE_URL}/group/invite/${token}`;
 	}
 
-	async joinGroupByInviteLink(userId: string, token: string): Promise<any> {
+	async joinGroupByInviteLink(user: any, token: string): Promise<any> {
 		const payload = this.jwtService.verify(token);
 		const group = await this.groupModel.findById(payload.groupId).lean();
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
-		const userAndRole = group.usersAndRoles.find(item => item.user.toString() === userId);
+		const userAndRole = group.usersAndRoles.find(item => item.user.toString() === user._id);
 		if (userAndRole) throw new HttpException('You are already in this group', HttpStatus.BAD_REQUEST);
+		if (payload.emailToInvite && payload.emailToInvite !== user.email) throw new HttpException('You are not invited to this group', HttpStatus.BAD_REQUEST);
 		await this.groupModel.updateOne({
 			_id: payload.groupId
 		}, {
 			$push: {
 				usersAndRoles: {
-					user: userId,
+					user: user._id,
 					role: RoleInGroup.MEMBER,
 				}
 			}
 		});
-		return await this.userService.joinGroup(userId, payload.groupId);
+		return await this.userService.joinGroup(user._id, payload.groupId);
 	}
 
 	async inviteUserViaEmail(user: any, groupId: string, emailToInvite: string): Promise<any> {
@@ -207,7 +205,7 @@ export class GroupService {
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
 		const userAndRole = group.usersAndRoles.find(item => item.user.toString() === user._id);
 		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
-		const url = this.generateInviteLinkByJWT(groupId);
+		const url = this.generateInviteLinkByJWT({ groupId, userId: user._id });
 		await this.mailService.sendInviteEmail(emailToInvite, url, group.name, user);
 	}
 }

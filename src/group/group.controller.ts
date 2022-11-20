@@ -85,7 +85,7 @@ export class GroupController {
 	@Post(':id/invite-user-by-email')
 	@UseGuards(JwtAuthGuard)
 	async inviteUser(@Req() req, @Body('email') email: string) {
-		const group = await this.groupService.inviteUserViaEmail(req.user._id, req.params.id, email);
+		const group = await this.groupService.inviteUserViaEmail(req.user, req.params.id, email);
 		return {
 			statusCode: HttpStatus.OK,
 			data: group,
@@ -96,7 +96,7 @@ export class GroupController {
 	@Get('/invite/:token')
 	@UseGuards(JwtAuthGuard)
 	async joinGroupByInviteLink(@Req() req, @Param('token') token: string) {
-		const result = await this.groupService.joinGroupByInviteLink(req.user._id, token);
+		const result = await this.groupService.joinGroupByInviteLink(req.user, token);
 		return {
 			statusCode: HttpStatus.OK,
 			// data: result,

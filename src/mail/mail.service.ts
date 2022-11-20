@@ -23,7 +23,7 @@ export class MailService {
 		await this.mailerService.sendMail({
 			to: emailToInvite,
 			subject: `You have been invited to join ${groupName} group`,
-			template: './invite',
+			template: './invite-to-group',
 			context: {
 				emailToInvite,
 				url,
