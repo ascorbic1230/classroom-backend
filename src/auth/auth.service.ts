@@ -2,8 +2,6 @@ import {
 	BadRequestException,
 	Injectable,
 	Logger,
-	Req,
-	Res,
 } from '@nestjs/common';
 import { UserService } from "@/user/user.service";
 import { hashPassword, validatePassword } from "@/utils";
@@ -51,6 +49,8 @@ export class AuthService {
 		return {
 			id: user._id,
 			email: user.email,
+			name: user.name,
+			avatarUrl: user.avatarUrl,
 			token: token,
 		};
 	}
@@ -67,7 +67,7 @@ export class AuthService {
 			password: hashPassword(data.password),
 		});
 		//TODO: uncomment this when app is ready for production
-		// //send email
+		// send email
 		// const confirmationToken = this.userService.generateJWTAsVerificationCode(newUser);
 		// await this.mailService.sendUserConfirmation(newUser, confirmationToken);
 		return {
@@ -95,13 +95,15 @@ export class AuthService {
 
 		const payload = ticket.getPayload();
 		const email = payload['email'];
+		const name = payload['name'];
 
 		let user = await this.userService.findByEmail(email);
 
 		if (!user) {
 			user = await this.userService.create({
 				email: email,
-				password: hashPassword('123456'),
+				name: name,
+				password: '1',
 				isEmailVerified: true,
 			}
 			);
