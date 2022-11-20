@@ -19,6 +19,12 @@ export class UserModel {
 	@Prop({ type: String, required: true })
 	password: string;
 
+	@Prop({ type: String })
+	avatarUrl: string;
+
+	@Prop({ type: String })
+	description: string;
+
 	@Prop({ type: Boolean, default: false })
 	isEmailVerified: boolean;
 
