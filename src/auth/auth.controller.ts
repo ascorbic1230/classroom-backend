@@ -18,6 +18,9 @@ export class AuthController {
 	async login(@Res() res, @Body() body: LoginDto) {
 		const user = await this.authService.login(body);
 		res.cookie('token', user.token);
+		res.cookie('name', user.name);
+		res.cookie('avatarUrl', user.avatarUrl);
+		res.cookie('email', user.email);
 		res.json({
 			data: user,
 			message: 'Login successfully',
