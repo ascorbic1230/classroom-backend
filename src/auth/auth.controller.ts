@@ -19,7 +19,9 @@ export class AuthController {
 		const user = await this.authService.login(body);
 		res.cookie('token', user.token);
 		res.cookie('name', user.name);
-		res.cookie('avatarUrl', user.avatarUrl);
+		if (user.avatarUrl) {
+			res.cookie('avatarUrl', user.avatarUrl);
+		}
 		res.cookie('email', user.email);
 		res.json({
 			data: user,
@@ -47,7 +49,9 @@ export class AuthController {
 		const user = await this.authService.loginGoogle(code);
 		res.cookie('token', user.token);
 		res.cookie('name', user.name);
-		res.cookie('avatarUrl', user.avatarUrl);
+		if (user.avatarUrl) {
+			res.cookie('avatarUrl', user.avatarUrl);
+		}
 		res.cookie('email', user.email);
 		return res.redirect(this.configService.get('FRONTEND_URL'));
 	};
