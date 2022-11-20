@@ -1,3 +1,4 @@
+import { ChangePasswordDto } from "@/auth/dtos/auth.dto";
 import { JwtAuthGuard } from "@/guards/jwt.guard";
 import { Query, Controller, Get, UseGuards, Post, Req, Body, Put } from '@nestjs/common';
 import { UserService } from "./user.service";
@@ -24,7 +25,7 @@ export class UserController {
 		return {
 			statusCode: 200,
 			data: user,
-			message: 'Get user\'s info successfully'
+			message: 'Get your info successfully'
 		};
 	}
 
@@ -42,6 +43,16 @@ export class UserController {
 			statusCode: 200,
 			data: user,
 			message: 'Get user\'s info successfully'
+		};
+	}
+
+	@UseGuards(JwtAuthGuard)
+	@Put('/change-password')
+	async changePassword(@Body() body: ChangePasswordDto, @Req() req) {
+		const user = await this.userService.changePassword(req.user._id, body);
+		return {
+			// data: user,
+			message: 'Change password successfully',
 		};
 	}
 }

@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserModel, UserDocument } from './schemas/user.schema';
 import { JwtService } from "@nestjs/jwt";
 import { GroupModel } from "@/group/schemas/group.schema";
+import { ChangePasswordDto } from "@/auth/dtos/auth.dto";
+import { hashPassword } from "@/utils";
 @Injectable()
 export class UserService {
 	constructor(
@@ -38,9 +40,9 @@ export class UserService {
 		return this.jwtService.sign(payload);
 	}
 
-	//should use redis instead
+	//TODO: should use redis instead
 	generateJWTAsVerificationCode(user: any) {
-		const payload = { email: user.email, name: user.name, time: Date.now() };
+		const payload = { email: user.email, name: user.name };
 		return this.jwtService.sign(payload, { expiresIn: '1h' });
 	}
 
@@ -79,6 +81,7 @@ export class UserService {
 		if (!user) {
 			throw new Error('User not found');
 		}
+		user.password = undefined;
 		return user;
 	}
 
@@ -87,5 +90,17 @@ export class UserService {
 			'path': 'groups', model: GroupModel.name
 		});
 		return myInfo.groups;
+	}
+	async changePassword(userId: string, data: ChangePasswordDto) {
+		const user = await this.userModel.findById(userId);
+		if (!user) {
+			throw new BadRequestException('User not found');
+		}
+		if (user.password !== hashPassword(data.oldPassword)) {
+			throw new BadRequestException('Old password is not correct');
+		}
+		user.password = await hashPassword(data.newPassword);
+		await user.save();
+		return user;
 	}
 }
