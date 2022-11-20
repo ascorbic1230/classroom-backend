@@ -11,10 +11,25 @@ export class MailService {
 		await this.mailerService.sendMail({
 			to: user.email,
 			subject: 'Confirm your email at TAT-Classroom',
-			template: './confirmation', // `.hbs` extension is appended automatically
-			context: { // ✏️ filling curly brackets with content
+			template: './confirmation',
+			context: {
 				email: user.email,
 				url: url,
+			},
+		});
+	}
+
+	async sendInviteEmail(emailToInvite: string, url: string, groupName: string, inviter: any) {
+		await this.mailerService.sendMail({
+			to: emailToInvite,
+			subject: `You have been invited to join ${groupName} group`,
+			template: './invite',
+			context: {
+				emailToInvite,
+				url,
+				groupName,
+				inviterName: inviter.name,
+				inviterEmail: inviter.email
 			},
 		});
 	}

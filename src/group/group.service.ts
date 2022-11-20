@@ -9,10 +9,18 @@ import { UserModel } from "@/user/schemas/user.schema";
 import { RoleInGroup } from "@/constants";
 import { ConfigService } from "@nestjs/config";
 import { AssignRoleDto } from "./dtos/user-and-role.dto";
+import { JwtService } from "@nestjs/jwt";
+import { MailService } from "@/mail/mail.service";
 @Injectable()
 export class GroupService {
 
-	constructor(@InjectModel(GroupModel.name) private readonly groupModel: Model<GroupDocument>, private readonly userService: UserService, private configService: ConfigService) { }
+	constructor(
+		@InjectModel(GroupModel.name) private readonly groupModel: Model<GroupDocument>,
+		private readonly userService: UserService,
+		private readonly configService: ConfigService,
+		private readonly jwtService: JwtService,
+		private readonly mailService: MailService
+	) { }
 
 	//Admin Route
 	async findAll(query: any): Promise<any> {
@@ -47,7 +55,8 @@ export class GroupService {
 
 	//Admin Route
 	findById(id: string) {
-		return this.groupModel.findById(id).lean();
+		// return this.groupModel.findById(id).populate('usersAndRoles.userId');
+		return this.groupModel.findById(id).populate({ path: 'usersAndRoles.user', model: UserModel.name, select: 'name email avatarUrl' });
 	}
 
 	async create(query: any, user: any) {
@@ -59,7 +68,7 @@ export class GroupService {
 			userCreated: user._id,
 			userUpdated: user._id,
 			usersAndRoles: [{
-				userId: user._id,
+				user: user._id,
 				role: RoleInGroup.OWNER,
 			}]
 		});
@@ -85,38 +94,10 @@ export class GroupService {
 		return this.userService.findMyGroup(userId);
 	}
 
-	//create link to invite user to group
-	async getInviteLink(userId: string, groupId: string): Promise<any> {
-		const group = await this.groupModel.findById(groupId).lean();
-		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
-		const userAndRole = group.usersAndRoles.find(item => item.userId.toString() === userId);
-		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
-		//TODO: redirect to frontend, display join group popup. On Click, call api {BASE_URL}/group/${groupId}/join
-		return `${this.configService.get('BASE_URL')}/group/${groupId}/join`;
-	}
-
-	async joinGroup(userId: string, groupId: string): Promise<any> {
-		const group = await this.groupModel.findById(groupId).lean();
-		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
-		const userAndRole = await group.usersAndRoles.find(item => item.userId.toString() === userId);
-		if (userAndRole) throw new HttpException('You are already in this group', HttpStatus.BAD_REQUEST);
-		await this.groupModel.updateOne({
-			_id: groupId
-		}, {
-			$push: {
-				usersAndRoles: {
-					userId,
-					role: RoleInGroup.MEMBER,
-				}
-			}
-		});
-		return await this.userService.joinGroup(userId, groupId);
-	}
-
 	async leaveGroup(userId: string, groupId: string): Promise<any> {
 		const group = await this.groupModel.findById(groupId).lean();
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
-		const userAndRole = await group.usersAndRoles.find(item => item.userId.toString() === userId);
+		const userAndRole = await group.usersAndRoles.find(item => item.user.toString() === userId);
 		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
 		//if role is owner, can not leave group
 		if (userAndRole.role === RoleInGroup.OWNER) throw new HttpException('Cannot leave group since you are owner. Please delete group instead', HttpStatus.BAD_REQUEST);
@@ -138,9 +119,9 @@ export class GroupService {
 		console.log('id To kick', userIdToKick);
 		const group = await this.groupModel.findById(groupId).lean();
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
-		const userAndRole = await group.usersAndRoles.find(item => item.userId.toString() === userId && (item.role === RoleInGroup.OWNER || item.role === RoleInGroup.CO_OWNER));
+		const userAndRole = await group.usersAndRoles.find(item => item.user.toString() === userId && (item.role === RoleInGroup.OWNER || item.role === RoleInGroup.CO_OWNER));
 		if (!userAndRole) throw new HttpException('You are not owner or co-owner of this group', HttpStatus.BAD_REQUEST);
-		const userAndRoleToKick = await group.usersAndRoles.find(item => item.userId.toString() === userIdToKick);
+		const userAndRoleToKick = await group.usersAndRoles.find(item => item.user.toString() === userIdToKick);
 		if (!userAndRoleToKick) throw new HttpException('User to kick is not a member of this group', HttpStatus.BAD_REQUEST);
 		//can not kick owner
 		if (userAndRoleToKick.role === RoleInGroup.OWNER) throw new HttpException('Cannot kick owner', HttpStatus.BAD_REQUEST);
@@ -171,19 +152,62 @@ export class GroupService {
 	async assignRole(userId: string, groupId: string, userToAssignRole: AssignRoleDto): Promise<any> {
 		const group = await this.groupModel.findById(groupId).lean();
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
-		const userAndRole = await group.usersAndRoles.find(item => item.userId.toString() === userId && (item.role === RoleInGroup.OWNER || item.role === RoleInGroup.CO_OWNER));
+		const userAndRole = await group.usersAndRoles.find(item => item.user.toString() === userId && (item.role === RoleInGroup.OWNER || item.role === RoleInGroup.CO_OWNER));
 		if (!userAndRole) throw new HttpException('You are not owner or co-owner of this group', HttpStatus.BAD_REQUEST);
-		const userAndRoleToAssign = await group.usersAndRoles.find(item => item.userId.toString() === userToAssignRole.userId);
+		const userAndRoleToAssign = await group.usersAndRoles.find(item => item.user.toString() === userToAssignRole.user);
 		if (!userAndRoleToAssign) throw new HttpException('User to assign is not a member of this group', HttpStatus.BAD_REQUEST);
 		//can not assign owner a new role
 		if (userAndRoleToAssign.role === RoleInGroup.OWNER) throw new HttpException('Cannot assign owner', HttpStatus.BAD_REQUEST);
 		return await this.groupModel.updateOne({
 			_id: groupId,
-			'usersAndRoles.userId': userToAssignRole.userId
+			'usersAndRoles.user': userToAssignRole.user
 		}, {
 			$set: {
 				'usersAndRoles.$.role': userToAssignRole.role
 			}
 		});
+	}
+
+	//create link to invite user to group
+	async getInviteLink(userId: string, groupId: string): Promise<any> {
+		const group = await this.groupModel.findById(groupId).lean();
+		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
+		const userAndRole = group.usersAndRoles.find(item => item.user.toString() === userId);
+		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
+		return this.generateInviteLinkByJWT(groupId);
+	}
+
+	generateInviteLinkByJWT(groupId: string) {
+		const payload = { groupId };
+		const token = this.jwtService.sign(payload);
+		return `${process.env.BASE_URL}/group/invite/${token}`;
+	}
+
+	async joinGroupByInviteLink(userId: string, token: string): Promise<any> {
+		const payload = this.jwtService.verify(token);
+		const group = await this.groupModel.findById(payload.groupId).lean();
+		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
+		const userAndRole = group.usersAndRoles.find(item => item.user.toString() === userId);
+		if (userAndRole) throw new HttpException('You are already in this group', HttpStatus.BAD_REQUEST);
+		await this.groupModel.updateOne({
+			_id: payload.groupId
+		}, {
+			$push: {
+				usersAndRoles: {
+					user: userId,
+					role: RoleInGroup.MEMBER,
+				}
+			}
+		});
+		return await this.userService.joinGroup(userId, payload.groupId);
+	}
+
+	async inviteUserViaEmail(user: any, groupId: string, emailToInvite: string): Promise<any> {
+		const group = await this.groupModel.findById(groupId).lean();
+		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
+		const userAndRole = group.usersAndRoles.find(item => item.user.toString() === user._id);
+		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
+		const url = this.generateInviteLinkByJWT(groupId);
+		await this.mailService.sendInviteEmail(emailToInvite, url, group.name, user);
 	}
 }
