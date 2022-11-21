@@ -16,11 +16,10 @@ import { GroupModel, GroupSchema } from './schemas/group.schema';
 		UserModule,
 		MailModule,
 		JwtModule.registerAsync({
-			useFactory: async (configService: ConfigService) => {
-				return {
-					secret: configService.get('JWT_SECRET')
-				}
-			},
+			useFactory: (configService: ConfigService) => ({
+				secret: configService.get('JWT_SECRET'),
+				signOptions: { expiresIn: '7d' },
+			}),
 			inject: [ConfigService],
 		}),
 	],

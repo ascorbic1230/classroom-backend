@@ -12,11 +12,10 @@ import { UserController } from "./user.controller";
 	imports: [
 		ConfigurationModule,
 		JwtModule.registerAsync({
-			useFactory: async (configService: ConfigService) => {
-				return {
-					secret: configService.get('JWT_SECRET')
-				}
-			},
+			useFactory: (configService: ConfigService) => ({
+				secret: configService.get('JWT_SECRET'),
+				signOptions: { expiresIn: '7d' },
+			}),
 			inject: [ConfigService],
 		}),
 		MongooseModule.forFeature([
