@@ -22,6 +22,9 @@ export class UserModel {
 	@Prop({ type: String })
 	avatarUrl: string;
 
+	@Prop({ type: Boolean, default: false })
+	isLoggedInWithGoogle: boolean;
+
 	@Prop({ type: String })
 	description: string;
 

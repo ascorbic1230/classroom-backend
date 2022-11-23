@@ -47,11 +47,14 @@ export class AuthService {
 
 
 		return {
-			id: user._id,
-			email: user.email,
-			name: user.name,
-			avatarUrl: user.avatarUrl,
 			token: token,
+			user: {
+				id: user._id,
+				email: user.email,
+				name: user.name,
+				isLoggedInWithGoogle: user.isLoggedInWithGoogle,
+				avatarUrl: user.avatarUrl,
+			}
 		};
 	}
 
@@ -103,6 +106,7 @@ export class AuthService {
 			user = await this.userService.create({
 				email: email,
 				name: name,
+				isLoggedInWithGoogle: true,
 				password: 'nopassword',
 				isEmailVerified: true,
 			}
@@ -113,11 +117,14 @@ export class AuthService {
 		const token = this.userService.generateJWT(user);
 
 		return {
-			id: user._id,
-			email: user.email,
-			name: user.name,
-			avatarUrl: user.avatarUrl,
 			token: token,
+			user: {
+				id: user._id,
+				email: user.email,
+				name: user.name,
+				isLoggedInWithGoogle: user.isLoggedInWithGoogle,
+				avatarUrl: user.avatarUrl,
+			}
 		};
 	}
 

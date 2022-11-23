@@ -18,11 +18,7 @@ export class AuthController {
 	async login(@Res() res, @Body() body: LoginDto) {
 		const user = await this.authService.login(body);
 		res.cookie('token', user.token);
-		res.cookie('name', user.name);
-		if (user.avatarUrl) {
-			res.cookie('avatarUrl', user.avatarUrl);
-		}
-		res.cookie('email', user.email);
+		res.cookie('user', user.user);
 		res.json({
 			data: user,
 			message: 'Login successfully',
@@ -48,11 +44,7 @@ export class AuthController {
 	async loginGoogleCallback(@Query('code') code, @Res() res) {
 		const user = await this.authService.loginGoogle(code);
 		res.cookie('token', user.token);
-		res.cookie('name', user.name);
-		if (user.avatarUrl) {
-			res.cookie('avatarUrl', user.avatarUrl);
-		}
-		res.cookie('email', user.email);
+		res.cookie('user', user.user);
 		return res.redirect(this.configService.get('FRONTEND_URL'));
 	};
 

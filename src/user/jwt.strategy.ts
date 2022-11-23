@@ -24,6 +24,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 		if (req.cookies && 'token' in req.cookies && req.cookies.token.length > 0) {
 			return req.cookies.token;
 		}
+		// if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
+		// 	return req.headers.authorization.split(' ')[1];
+		// }
 		return null;
 	}
 }
