@@ -17,11 +17,11 @@ export class GroupModel {
 	@Prop({ type: [{ user: { type: Types.ObjectId, ref: 'users' }, role: { type: String }, _id: false }] })
 	usersAndRoles: { user: Types.ObjectId, role: RoleInGroup }[];
 
-	@Prop({ type: String, default: null })
-	userCreated: string;
+	@Prop({ type: Types.ObjectId, ref: 'users' })
+	userCreated: { type: Types.ObjectId, ref: 'users' };
 
-	@Prop({ type: String, default: null })
-	userUpdated: string;
+	@Prop({ type: Types.ObjectId, ref: 'users' })
+	userUpdated: { type: Types.ObjectId, ref: 'users' };
 }
 
 export const GroupSchema = SchemaFactory.createForClass(GroupModel);

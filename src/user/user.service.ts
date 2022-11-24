@@ -90,7 +90,10 @@ export class UserService {
 
 	async findMyGroup(userId: string) {
 		const myInfo = await this.userModel.findById(userId).populate({
-			'path': 'groups', model: GroupModel.name
+			'path': 'groups', model: GroupModel.name,
+			populate: {
+				'path': 'userCreated', model: UserModel.name, select: 'name email avatarUrl'
+			}
 		});
 		return myInfo.groups;
 	}

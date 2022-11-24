@@ -38,7 +38,7 @@ export class GroupService {
 		});
 		const [total, data] = await Promise.all([
 			this.groupModel.count(_query),
-			this.groupModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).lean()
+			this.groupModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).lean()
 		]);
 		return {
 			statusCode: HttpStatus.OK,
@@ -56,7 +56,7 @@ export class GroupService {
 	//Admin Route
 	findById(id: string) {
 		// return this.groupModel.findById(id).populate('usersAndRoles.userId');
-		return this.groupModel.findById(id).populate({ path: 'usersAndRoles.user', model: UserModel.name, select: 'name email avatarUrl' });
+		return this.groupModel.findById(id).populate({ path: 'usersAndRoles.user', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).lean();
 	}
 
 	async create(query: any, user: any) {
