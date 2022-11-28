@@ -49,7 +49,7 @@ export class AuthService {
 		return {
 			token: token,
 			user: {
-				id: user._id,
+				id: user._id.toString(),
 				email: user.email,
 				name: user.name,
 				isLoggedInWithGoogle: user.isLoggedInWithGoogle,
@@ -66,6 +66,7 @@ export class AuthService {
 		}
 
 		const newUser = await this.userService.create({
+			name: data.name,
 			email: data.email,
 			password: hashPassword(data.password),
 		});
@@ -75,6 +76,7 @@ export class AuthService {
 		// await this.mailService.sendUserConfirmation(newUser, confirmationToken);
 		return {
 			id: newUser._id,
+			name: newUser.name,
 			email: newUser.email
 		};
 	}
@@ -119,7 +121,7 @@ export class AuthService {
 		return {
 			token: token,
 			user: {
-				id: user._id,
+				id: user._id.toString(),
 				email: user.email,
 				name: user.name,
 				isLoggedInWithGoogle: user.isLoggedInWithGoogle,

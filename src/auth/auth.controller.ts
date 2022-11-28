@@ -18,7 +18,7 @@ export class AuthController {
 	async login(@Res() res, @Body() body: LoginDto) {
 		const user = await this.authService.login(body);
 		res.cookie('token', user.token);
-		res.cookie('user', user.user);
+		res.cookie('user', JSON.stringify(user.user));
 		res.json({
 			data: user,
 			message: 'Login successfully',
@@ -44,7 +44,7 @@ export class AuthController {
 	async loginGoogleCallback(@Query('code') code, @Res() res) {
 		const user = await this.authService.loginGoogle(code);
 		res.cookie('token', user.token);
-		res.cookie('user', user.user);
+		res.cookie('user', JSON.stringify(user.user));
 		return res.redirect(this.configService.get('FRONTEND_URL'));
 	};
 

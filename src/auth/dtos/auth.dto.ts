@@ -1,6 +1,10 @@
 import { IsString, IsNotEmpty, IsEmail, IsEnum, IsNotIn, IsMongoId, Matches, MaxLength, Validate, IsOptional } from 'class-validator';
 
 export class LoginDto {
+	@IsString()
+	@IsOptional()
+	name: string;
+
 	@IsNotEmpty()
 	@IsEmail()
 	email: string;
