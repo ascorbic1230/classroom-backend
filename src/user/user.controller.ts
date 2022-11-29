@@ -1,5 +1,5 @@
-import { ChangePasswordDto } from "@/auth/dtos/auth.dto";
-import { JwtAuthGuard } from "@/guards/jwt.guard";
+import { ChangePasswordDto } from "src/auth/dtos/auth.dto";
+import { JwtAuthGuard } from "src/guards/jwt.guard";
 import { Query, Controller, Get, UseGuards, Post, Req, Body, Put } from '@nestjs/common';
 import { UpdateAccountDto } from "./dtos/update-account.dto";
 import { UserService } from "./user.service";

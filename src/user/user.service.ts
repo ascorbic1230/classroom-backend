@@ -3,9 +3,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserModel, UserDocument } from './schemas/user.schema';
 import { JwtService } from "@nestjs/jwt";
-import { GroupModel } from "@/group/schemas/group.schema";
-import { ChangePasswordDto } from "@/auth/dtos/auth.dto";
-import { hashPassword } from "@/utils";
+import { GroupModel } from "src/group/schemas/group.schema";
+import { ChangePasswordDto } from "src/auth/dtos/auth.dto";
+import { hashPassword } from "src/utils";
 import { UpdateAccountDto } from "./dtos/update-account.dto";
 @Injectable()
 export class UserService {

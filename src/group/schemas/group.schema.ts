@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { RoleInGroup } from "@/constants";
+import { RoleInGroup } from "src/constants";
 
 export type GroupDocument = GroupModel & Document;
 @Schema({ timestamps: true, collection: 'groups' })

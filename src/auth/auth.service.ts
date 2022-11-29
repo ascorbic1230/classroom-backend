@@ -3,11 +3,11 @@ import {
 	Injectable,
 	Logger,
 } from '@nestjs/common';
-import { UserService } from "@/user/user.service";
-import { hashPassword, validatePassword } from "@/utils";
+import { UserService } from "src/user/user.service";
+import { hashPassword, validatePassword } from "src/utils";
 import { ConfigService } from "@nestjs/config";
 import { OAuth2Client } from "google-auth-library";
-import { MailService } from "@/mail/mail.service";
+import { MailService } from "src/mail/mail.service";
 import { LoginDto } from "./dtos/auth.dto";
 
 @Injectable()
