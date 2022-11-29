@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty, IsEmail, IsEnum, IsNotIn, IsMongoId, Matches } from 'class-validator';
-import { RoleInGroup } from "src/constants";
+import { RoleInGroup } from "../../constants";
 
 export class AssignRoleDto {
 	@IsString()

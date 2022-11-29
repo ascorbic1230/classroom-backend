@@ -1,4 +1,4 @@
-import { JwtAuthGuard } from "src/guards/jwt.guard";
+import { JwtAuthGuard } from "../guards/jwt.guard";
 import { Query, Param, Controller, Get, UseGuards, Post, Req, Body, Put, HttpStatus, HttpException, Delete } from '@nestjs/common';
 import { AssignRoleDto } from "./dtos/user-and-role.dto";
 import { GroupService } from "./group.service";

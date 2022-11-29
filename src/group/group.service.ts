@@ -3,14 +3,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { get } from 'lodash';
 import { GroupModel, GroupDocument } from './schemas/group.schema';
-import { sanitizePageSize } from "src/utils";
-import { UserService } from "src/user/user.service";
-import { UserModel } from "src/user/schemas/user.schema";
-import { RoleInGroup } from "src/constants";
+import { sanitizePageSize } from "../utils";
+import { UserService } from "../user/user.service";
+import { UserModel } from "../user/schemas/user.schema";
+import { RoleInGroup } from "../constants";
 import { ConfigService } from "@nestjs/config";
 import { AssignRoleDto } from "./dtos/user-and-role.dto";
 import { JwtService } from "@nestjs/jwt";
-import { MailService } from "src/mail/mail.service";
+import { MailService } from "../mail/mail.service";
 @Injectable()
 export class GroupService {
 
