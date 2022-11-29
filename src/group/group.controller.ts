@@ -99,7 +99,7 @@ export class GroupController {
 		const result = await this.groupService.joinGroupByInviteLink(req.user, token);
 		return {
 			statusCode: HttpStatus.OK,
-			// data: result,
+			data: result,
 			message: 'Join group successfully'
 		}
 	}
