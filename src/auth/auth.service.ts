@@ -22,7 +22,7 @@ export class AuthService {
 	) {
 		this.googleClient = new OAuth2Client('854978946487-4ghr067l2tv525p5jjs4ol6gbhiv8gkg.apps.googleusercontent.com',
 			'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',
-			'http://localhost:3000/auth/google/callback');
+			`${this.configService.get('FRONTEND_URL')}/auth/google/callback`);
 	}
 
 
