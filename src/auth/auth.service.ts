@@ -38,9 +38,9 @@ export class AuthService {
 		}
 
 		//TODO: uncomment this when app is ready for production
-		// if (!user.isEmailVerified) {
-		// 	throw new BadRequestException('Email is not verified');
-		// }
+		if (!user.isEmailVerified) {
+			throw new BadRequestException('Email is not verified');
+		}
 
 		//generate jwt token
 		const token = this.userService.generateJWT(user);
@@ -70,10 +70,9 @@ export class AuthService {
 			email: data.email,
 			password: hashPassword(data.password),
 		});
-		//TODO: uncomment this when app is ready for production
 		// send email
-		// const confirmationToken = this.userService.generateJWTAsVerificationCode(newUser);
-		// await this.mailService.sendUserConfirmation(newUser, confirmationToken);
+		const confirmationToken = this.userService.generateJWTAsVerificationCode(newUser);
+		await this.mailService.sendUserConfirmation(newUser, confirmationToken);
 		return {
 			id: newUser._id,
 			name: newUser.name,
