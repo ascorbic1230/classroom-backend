@@ -177,7 +177,7 @@ export class GroupService {
 
 	generateInviteLinkByJWT(payload: any) {
 		const token = this.jwtService.sign(payload);
-		return `${this.configService.get('FRONTEND_URL')}/group/invite/${token}`;
+		return `${this.configService.get('FRONTEND_URL')}/group/invite?token=${token}`;
 	}
 
 	async joinGroupByInviteLink(user: any, token: string): Promise<any> {
