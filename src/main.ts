@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import cookieParser from 'cookie-parser';
+import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 import 'dotenv/config';
@@ -12,7 +12,10 @@ async function bootstrap() {
 
 	// Set config
 	const configService: ConfigService = app.get(ConfigService);
-	app.enableCors();
+	app.enableCors({
+		origin: configService.get('FRONTEND_URL'),
+		credentials: true,
+	});
 	app.use(cookieParser());
 	app.useGlobalPipes(
 		new ValidationPipe({
