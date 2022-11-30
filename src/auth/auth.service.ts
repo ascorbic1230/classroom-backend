@@ -108,7 +108,7 @@ export class AuthService {
 				email: email,
 				name: name,
 				isLoggedInWithGoogle: true,
-				password: 'nopassword',
+				password: hashPassword(Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)),
 				isEmailVerified: true,
 			}
 			);
