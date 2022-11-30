@@ -45,8 +45,9 @@ export class AuthController {
 		const user = await this.authService.loginGoogle(code);
 		res.cookie('token', user.token);
 		res.cookie('user', JSON.stringify(user.user));
-		return res.redirect(this.configService.get('FRONTEND_URL'));
-	};
+		const urlToRedirect = `${this.configService.get('FRONTEND_URL')}/login/google?token=${user.token}&user=${JSON.stringify(user.user)}`;
+		return res.redirect(urlToRedirect);
+	}
 
 	@Get('/confirm')
 	async confirmAccount(@Query('token') token) {
