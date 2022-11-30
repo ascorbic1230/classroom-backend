@@ -37,7 +37,6 @@ export class AuthService {
 			throw new BadRequestException('Invalid password');
 		}
 
-		//TODO: uncomment this when app is ready for production
 		if (!user.isEmailVerified) {
 			throw new BadRequestException('Email is not verified');
 		}

@@ -43,7 +43,6 @@ export class UserService {
 		return this.jwtService.sign(payload);
 	}
 
-	//TODO: should use redis instead
 	generateJWTAsVerificationCode(user: any) {
 		const payload = { email: user.email, name: user.name };
 		return this.jwtService.sign(payload, { expiresIn: '1h' });

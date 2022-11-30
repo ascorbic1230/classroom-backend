@@ -50,13 +50,8 @@ export class AuthController {
 	}
 
 	@Get('/confirm')
-	async confirmAccount(@Query('token') token) {
+	async confirmAccount(@Query('token') token, @Res() res) {
 		const user = await this.authService.confirmAccount(token);
-
-		//return successful message then redirect to login page
-		return {
-			data: user,
-			message: 'Confirm account successfully',
-		};
+		return res.redirect(`${this.configService.get('FRONTEND_URL')}/login?email=${user.email}`);
 	}
 }
