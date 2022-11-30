@@ -1,7 +1,7 @@
 import { HttpException } from "@nestjs/common";
 import ShortUniqueId from "short-unique-id";
 import * as crypto from 'crypto';
-import * as moment from "moment";
+const moment = require('moment-timezone');
 import * as path from "path";
 
 const ShortID12 = new ShortUniqueId({ length: 12 });
