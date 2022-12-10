@@ -1,4 +1,3 @@
-import { MailModule } from "../mail/mail.module";
 import { UserModule } from "../user/user.module";
 import { Module } from '@nestjs/common';
 import { ConfigService } from "@nestjs/config";
@@ -14,7 +13,6 @@ import { PresentationModel, PresentationSchema } from './schemas/presentation.sc
 			{ name: PresentationModel.name, schema: PresentationSchema },
 		]),
 		UserModule,
-		MailModule,
 		JwtModule.registerAsync({
 			useFactory: (configService: ConfigService) => ({
 				secret: configService.get('JWT_SECRET'),
@@ -25,5 +23,6 @@ import { PresentationModel, PresentationSchema } from './schemas/presentation.sc
 	],
 	controllers: [PresentationController],
 	providers: [PresentationService],
+	exports: [PresentationService],
 })
 export class PresentationModule { }

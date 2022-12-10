@@ -63,10 +63,9 @@ export class PresentationController {
 	@Delete(':id')
 	@UseGuards(JwtAuthGuard)
 	async deletePresentation(@Req() req) {
-		const result = await this.presentationService.delete(req.params.id, req.user._id);
+		await this.presentationService.delete(req.params.id, req.user._id);
 		return {
 			statusCode: HttpStatus.OK,
-			// data: presentation,
 			message: 'Delete presentation successfully',
 		}
 	}

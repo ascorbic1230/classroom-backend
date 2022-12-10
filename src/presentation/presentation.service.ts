@@ -8,6 +8,7 @@ import { UserService } from "../user/user.service";
 import { UserModel } from "../user/schemas/user.schema";
 import { ConfigService } from "@nestjs/config";
 import { PresentationDto } from "./dtos/presentation-dto";
+import { SlideService } from "../slide/slide.service";
 @Injectable()
 export class PresentationService {
 
@@ -33,7 +34,7 @@ export class PresentationService {
 		});
 		const [total, data] = await Promise.all([
 			this.presentationModel.count(_query),
-			this.presentationModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).lean()
+			this.presentationModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title options answer' }).lean()
 		]);
 		return {
 			statusCode: HttpStatus.OK,
@@ -49,21 +50,20 @@ export class PresentationService {
 	}
 
 	async findById(id: string): Promise<any> {
-		const presentation = await this.presentationModel.findById(id).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).lean();
+		const presentation = await this.presentationModel.findById(id).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title options answer' }).lean();
 		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
 		return presentation;
 	}
 
 	findMyPresentation(userId: string) {
-		return this.presentationModel.find({ userCreated: userId }).lean();
+		return this.presentationModel.find({ userCreated: userId }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title options answer' }).lean();
 	}
 
 	async create(data: PresentationDto, userId: string) {
 		const user = await this.userService.findById(userId);
 		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 		const presentation = await this.presentationModel.create({
-			name: data.name,
-			description: data.description,
+			...data,
 			slides: [],
 			collaborators: [],
 			userCreated: userId,
@@ -76,16 +76,42 @@ export class PresentationService {
 		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
 		if (presentation.userCreated.toString() !== userId) throw new HttpException('You do not have permission to update this presentation', HttpStatus.FORBIDDEN);
 		return this.presentationModel.findOneAndUpdate({ _id: id }, {
-			name: data.name,
-			description: data.description,
+			...data,
 			userUpdated: userId,
 		}, { new: true });
 	}
 
 	async delete(id: string, userId: string) {
+		//TODO: When delete presentation, slides should be deleted too
 		const presentation = await this.presentationModel.findById(id);
 		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
 		if (presentation.userCreated.toString() !== userId) throw new HttpException('You do not have permission to delete this presentation', HttpStatus.FORBIDDEN);
 		return await this.presentationModel.deleteOne({ _id: id });
+	}
+
+	async addSlide(id: string, slideId: string) {
+		const presentation = await this.presentationModel.findById(id);
+		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
+		await this.presentationModel.updateOne({
+			_id: id
+		}, {
+			$push: {
+				slides: slideId
+			}
+		});
+		return presentation;
+	}
+
+	async removeSlide(id: string, slideId: string) {
+		const presentation = await this.presentationModel.findById(id);
+		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
+		await this.presentationModel.updateOne({
+			_id: id
+		}, {
+			$pull: {
+				slides: slideId
+			}
+		});
+		return presentation;
 	}
 }
