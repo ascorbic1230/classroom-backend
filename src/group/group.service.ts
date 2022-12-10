@@ -59,8 +59,8 @@ export class GroupService {
 		return this.groupModel.findById(id).populate({ path: 'usersAndRoles.user', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).lean();
 	}
 
-	async create(query: any, user: any) {
-		const { name, description } = query;
+	async create(data: any, user: any) {
+		const { name, description } = data;
 		if (!name) throw new HttpException('name is required', HttpStatus.BAD_REQUEST);
 		const group = await this.groupModel.create({
 			name,
@@ -76,8 +76,8 @@ export class GroupService {
 		return group;
 	}
 
-	update(id: string, query: any) {
-		const { _id, name, description } = query;
+	update(id: string, data: any) {
+		const { _id, name, description } = data;
 		if (!_id) throw new HttpException('_id is required', HttpStatus.BAD_REQUEST);
 		return this.groupModel.findOneAndUpdate({ _id }, {
 			name,
