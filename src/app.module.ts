@@ -6,6 +6,7 @@ import { AuthModule } from "./auth/auth.module";
 import { GroupModule } from "./group/group.module";
 import { PresentationModule } from "./presentation/presentation.module";
 import { SlideModule } from "./slide/slide.module";
+import { EventsModule } from "./events/events.module";
 
 @Module({
 	imports: [
@@ -13,6 +14,7 @@ import { SlideModule } from "./slide/slide.module";
 		AuthModule,
 		GroupModule,
 		SlideModule,
+		EventsModule,
 		PresentationModule
 	],
 	controllers: [AppController],

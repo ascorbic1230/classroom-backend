@@ -17,16 +17,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 	async validate(payload: any) {
 		const { email } = payload;
 		const user = await this.userService.findByEmail(email);
-		return { _id: user._id.toString(), email: user.email, name: user.name };
+		return { _id: user?._id.toString(), email: user?.email, name: user?.name };
 	}
 
 	private static extractJWT(req: any): string | null {
 		if (req.cookies && 'token' in req.cookies && req.cookies.token.length > 0) {
 			return req.cookies.token;
 		}
-		// if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
-		// 	return req.headers.authorization.split(' ')[1];
-		// }
 		return null;
 	}
 }
