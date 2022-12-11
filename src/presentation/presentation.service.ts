@@ -95,6 +95,9 @@ export class PresentationService {
 		const presentation = await this.presentationModel.findById(id);
 		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
 		if (presentation.userCreated.toString() !== userId) throw new HttpException('You do not have permission to delete this presentation', HttpStatus.FORBIDDEN);
+		for (const slide of presentation.slides) {
+			await this.slideService.delete(slide.toString(), userId);
+		}
 		return await this.presentationModel.deleteOne({ _id: id });
 	}
 

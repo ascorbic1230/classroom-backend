@@ -1,7 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEnum, IsArray } from 'class-validator';
 import { SlideType } from "../../constants";
 
 export class CreateSlideDto {
+
+	_id?: string;
+
 	@IsString()
 	@IsNotEmpty()
 	presentationId: string;
@@ -15,8 +18,9 @@ export class CreateSlideDto {
 	slideType?: SlideType;
 
 	@IsOptional()
-	options?: { value: string, image: string }[];
+	options?: { value: string, image: string, quantity: number }[];
 
 	@IsOptional()
-	answer?: string;
+	@IsArray()
+	answer?: string[];
 }

@@ -1,6 +1,6 @@
 import { forwardRef, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { get } from 'lodash';
 import { SlideModel, SlideDocument } from './schemas/slide.schema';
 import { sanitizePageSize } from "../utils";
@@ -73,8 +73,9 @@ export class SlideService {
 	}
 
 	async create(data: CreateSlideDto, userId: string) {
-		const slide = await this.createSlideOnly(data, userId);
-		await this.presentationService.addSlide(data.presentationId, slide._id);
+		const slideId = new Types.ObjectId();
+		await this.presentationService.addSlide(data.presentationId, slideId.toString());
+		const slide = await this.createSlideOnly({ ...data, _id: slideId.toString() }, userId);
 		return slide;
 	}
 
