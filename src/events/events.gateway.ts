@@ -10,7 +10,6 @@ import {
 import { Server, Socket } from 'socket.io';
 import { SlideService } from "../slide/slide.service";
 import { WsJwtAuthGuard } from "../guards/ws-jwt.guard";
-import { JoinRoomDto } from "./dtos/join-room.dto";
 import { PresentationService } from "../presentation/presentation.service";
 
 @WebSocketGateway({
@@ -66,7 +65,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	}
 
 	@SubscribeMessage('join-room')
-	public joinRoom(client: any, room: JoinRoomDto): void {
+	public joinRoom(client: any, room): void {
 		const user = client.user;
 		const { roomId } = room;
 		if (this.members[user._id]?.roomId === roomId) {
@@ -82,7 +81,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	}
 
 	@SubscribeMessage('leave-room')
-	public leaveRoom(client: any, room: JoinRoomDto): void {
+	public leaveRoom(client: any, room): void {
 		const user = client.user;
 		const { roomId } = room;
 		client.leave(roomId);
