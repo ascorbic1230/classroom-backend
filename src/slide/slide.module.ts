@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { MongooseModule } from '@nestjs/mongoose';
@@ -13,7 +13,7 @@ import { UserModule } from "../user/user.module";
 		MongooseModule.forFeature([
 			{ name: SlideModel.name, schema: SlideSchema },
 		]),
-		PresentationModule,
+		forwardRef(() => PresentationModule),
 		UserModule,
 		JwtModule.registerAsync({
 			useFactory: (configService: ConfigService) => ({
@@ -25,5 +25,6 @@ import { UserModule } from "../user/user.module";
 	],
 	controllers: [SlideController],
 	providers: [SlideService],
+	exports: [SlideService],
 })
 export class SlideModule { }

@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { forwardRef, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { get } from 'lodash';
@@ -16,6 +16,7 @@ export class SlideService {
 	constructor(
 		@InjectModel(SlideModel.name) private readonly slideModel: Model<SlideDocument>,
 		private readonly userService: UserService,
+		@Inject(forwardRef(() => PresentationService))
 		private readonly presentationService: PresentationService,
 		private readonly configService: ConfigService
 	) { }
@@ -57,7 +58,8 @@ export class SlideService {
 		return slide;
 	}
 
-	async create(data: CreateSlideDto, userId: string) {
+
+	async createSlideOnly(data: CreateSlideDto, userId: string) {
 		const user = await this.userService.findById(userId);
 		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 		const presentationId = data.presentationId;
@@ -67,7 +69,12 @@ export class SlideService {
 			userCreated: userId,
 			userUpdated: userId,
 		});
-		await this.presentationService.addSlide(presentationId, slide._id);
+		return slide;
+	}
+
+	async create(data: CreateSlideDto, userId: string) {
+		const slide = await this.createSlideOnly(data, userId);
+		await this.presentationService.addSlide(data.presentationId, slide._id);
 		return slide;
 	}
 

@@ -1,6 +1,6 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { forwardRef, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { get } from 'lodash';
 import { PresentationModel, PresentationDocument } from './schemas/presentation.schema';
 import { sanitizePageSize } from "../utils";
@@ -9,12 +9,15 @@ import { UserModel } from "../user/schemas/user.schema";
 import { ConfigService } from "@nestjs/config";
 import { PresentationDto } from "./dtos/presentation-dto";
 import { SlideService } from "../slide/slide.service";
+import { SlideModel } from "../slide/schemas/slide.schema";
 @Injectable()
 export class PresentationService {
 
 	constructor(
 		@InjectModel(PresentationModel.name) private readonly presentationModel: Model<PresentationDocument>,
 		private readonly userService: UserService,
+		@Inject(forwardRef(() => SlideService))
+		private readonly slideService: SlideService,
 		private readonly configService: ConfigService
 	) { }
 
@@ -34,7 +37,7 @@ export class PresentationService {
 		});
 		const [total, data] = await Promise.all([
 			this.presentationModel.count(_query),
-			this.presentationModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title options answer' }).lean()
+			this.presentationModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: SlideModel.name, 'select': 'title slideType options answer' }).lean()
 		]);
 		return {
 			statusCode: HttpStatus.OK,
@@ -50,25 +53,31 @@ export class PresentationService {
 	}
 
 	async findById(id: string): Promise<any> {
-		const presentation = await this.presentationModel.findById(id).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title options answer' }).lean();
+		const presentation = await this.presentationModel.findById(id).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title slideType options answer' }).lean();
 		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
 		return presentation;
 	}
 
 	findMyPresentation(userId: string) {
-		return this.presentationModel.find({ userCreated: userId }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title options answer' }).lean();
+		return this.presentationModel.find({ userCreated: userId }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title slideType options answer' }).lean();
 	}
 
 	async create(data: PresentationDto, userId: string) {
 		const user = await this.userService.findById(userId);
 		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+		const presentationId = new Types.ObjectId();
+		const slide = await this.slideService.createSlideOnly({ presentationId: presentationId.toString() }, userId);
 		const presentation = await this.presentationModel.create({
 			...data,
-			slides: [],
+			slides: [slide._id],
 			collaborators: [],
 			userCreated: userId,
+			_id: presentationId
 		});
-		return presentation;
+		// bad code
+		const result = presentation.toObject();
+		result.slides = [{ title: slide.title, slideType: slide.slideType, options: slide.options, answer: slide.answer, _id: slide._id }];
+		return result;
 	}
 
 	async update(id: string, data: PresentationDto, userId: string) {
@@ -92,6 +101,9 @@ export class PresentationService {
 	async addSlide(id: string, slideId: string) {
 		const presentation = await this.presentationModel.findById(id);
 		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
+		for (const slide of presentation.slides) {
+			if (slide.toString() === slideId) throw new HttpException('Slide already exists', HttpStatus.BAD_REQUEST);
+		}
 		await this.presentationModel.updateOne({
 			_id: id
 		}, {

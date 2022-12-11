@@ -8,15 +8,15 @@ export class CreateSlideDto {
 
 	@IsString()
 	@IsOptional()
-	title: string;
+	title?: string;
 
 	@IsEnum(SlideType)
 	@IsOptional()
-	slideType: SlideType;
+	slideType?: SlideType;
 
 	@IsOptional()
-	options: { value: string, image: string }[];
+	options?: { value: string, image: string }[];
 
 	@IsOptional()
-	answer: string;
+	answer?: string;
 }
