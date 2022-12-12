@@ -54,7 +54,6 @@ export class PresentationService {
 
 	async findById(id: string): Promise<any> {
 		const presentation = await this.presentationModel.findById(id).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title slideType options answer' }).lean();
-		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
 		return presentation;
 	}
 
