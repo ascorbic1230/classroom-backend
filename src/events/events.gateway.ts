@@ -94,7 +94,8 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			...user,
 			roomId
 		}
-		this.server.to(roomId).emit('wait-in-room', { type: 'info', message: `User ${user.email} joined room ${roomId}` });
+		const roomDetail = this.rooms[roomId];
+		this.server.to(roomId).emit('wait-in-room', { type: 'info', message: `User ${user.email} joined room ${roomId}`, data: roomDetail });
 	}
 
 	@SubscribeMessage('leave-room')
