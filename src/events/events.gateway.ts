@@ -70,6 +70,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			roomId,
 			hostId: user._id,
 			...presentation,
+			userVotes: [],
 			presentationId: presentation._id.toString(),
 		}
 		this.rooms[roomId] = room;
