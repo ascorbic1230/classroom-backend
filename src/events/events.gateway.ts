@@ -43,7 +43,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		this.logger.log('Init');
 	}
 
-
 	@SubscribeMessage('host-create-room')
 	public async handleHostCreateRoomEvent(client: any, data: any): Promise<void> {
 		const user = client.user;
@@ -195,7 +194,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`Presentation ${presentationId} not found or not belong to room ${roomId}`);
 			return;
 		}
-		//update all options in each slide to new quantity
+		//update all options in each slide to new quantity, save to mongodb
 		room.slides.forEach(async (slide) => {
 			await this.slideService.update(slide._id, { options: slide.options }, user._id);
 		});
