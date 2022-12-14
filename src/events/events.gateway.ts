@@ -176,7 +176,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		// 	return;
 		// }
 		//check if user already voted
-		const isUserVoted = room.userVotes.includes(user._id.toString());
+		const isUserVoted = room.userVotes?.includes(user._id.toString());
 		if (isUserVoted) {
 			this.server.to(client.id).emit('private-message', { message: `User ${user.email} already voted` });
 			this.logger.log(`User ${user.email} already voted`);
