@@ -168,12 +168,12 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`Option with index ${optionIndex} not found`);
 			return;
 		}
-		//check if slide is current slide
-		if (room.currentSlideId !== slide._id.toString()) {
-			this.server.to(client.id).emit('private-message', { message: `Slide ${slideId} is not current slide` });
-			this.logger.log(`Slide ${slideId} is not current slide`);
-			return;
-		}
+		// //check if slide is current slide
+		// if (room.currentSlideId !== slide._id.toString()) {
+		// 	this.server.to(client.id).emit('private-message', { message: `Slide ${slideId} is not current slide` });
+		// 	this.logger.log(`Slide ${slideId} is not current slide`);
+		// 	return;
+		// }
 		//check if user already voted
 		const isUserVoted = room.userVotes.includes(user._id.toString());
 		if (isUserVoted) {
