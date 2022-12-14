@@ -133,6 +133,8 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`User ${user.email} is not host of room ${roomId}`);
 			return;
 		}
+		room.currentSlideId = slide._id.toString();
+		room.userVotes = [];
 		this.server.to(roomId).emit('wait-in-room', { type: 'new-slide', message: `Host ${user.email} started slide ${slideId}`, data: slide });
 	}
 
@@ -164,7 +166,21 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`Option with index ${optionIndex} not found`);
 			return;
 		}
+		//check if slide is current slide
+		if (room.currentSlideId !== slide._id.toString()) {
+			this.server.to(client.id).emit('private-message', { message: `Slide ${slideId} is not current slide` });
+			this.logger.log(`Slide ${slideId} is not current slide`);
+			return;
+		}
+		//check if user already voted
+		const isUserVoted = room.userVotes.includes(user._id.toString());
+		if (isUserVoted) {
+			this.server.to(client.id).emit('private-message', { message: `User ${user.email} already voted` });
+			this.logger.log(`User ${user.email} already voted`);
+			return;
+		}
 		option.quantity += 1;
+		room.userVotes.push(user._id.toString());
 		this.server.to(roomId).emit('wait-in-room', { type: 'new-vote', message: `Member ${user.email} voted for option ${optionIndex}`, data: slide.options });
 	}
 
