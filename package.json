@@ -48,6 +48,7 @@
     "lodash": "^4.17.21",
     "moment-timezone": "^0.5.38",
     "mongoose": "^6.6.5",
+    "nest": "^0.1.6",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.0",
     "redis": "^4.4.0",
