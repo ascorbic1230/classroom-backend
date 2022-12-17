@@ -9,7 +9,7 @@
     "prebuild": "rimraf dist",
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
+    "start": "node dist/main.js",
     "start:dev": "env-cmd -f ./.env nest start --watch",
     "start:debug": "env-cmd -f ./.env nest start --debug --watch",
     "start:prod": "node dist/main",
@@ -49,6 +49,7 @@
     "moment-timezone": "^0.5.38",
     "mongoose": "^6.6.5",
     "nest": "^0.1.6",
+		"@nestjs/cli": "^9.1.4",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.0",
     "redis": "^4.4.0",
@@ -58,7 +59,6 @@
     "short-unique-id": "^4.4.4"
   },
   "devDependencies": {
-    "@nestjs/cli": "^9.1.4",
     "@nestjs/schematics": "^9.0.3",
     "@nestjs/testing": "^9.1.4",
     "@types/express": "^4.17.14",
