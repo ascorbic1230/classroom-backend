@@ -11,7 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { SlideService } from "../slide/slide.service";
 import { WsJwtAuthGuard } from "../guards/ws-jwt.guard";
 import { PresentationService } from "../presentation/presentation.service";
-import { options } from "joi";
+import { RedisService } from "src/redis/redis.service";
 
 @WebSocketGateway({
 	cors: {
@@ -22,8 +22,7 @@ import { options } from "joi";
 export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
 	private readonly logger: Logger;
 	private members: any[] = [];
-	private rooms: any[] = [];
-	constructor(private readonly slideService: SlideService, private readonly presentationService: PresentationService) {
+	constructor(private readonly slideService: SlideService, private readonly presentationService: PresentationService, private readonly redisService: RedisService) {
 		this.logger = new Logger(EventsGateway.name);
 	}
 
@@ -61,6 +60,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 					index,
 				}
 			});
+			slide.userVotes = [];
 		}
 
 		const roomId = Math.random().toString(36).slice(2, 10);
@@ -73,7 +73,12 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			userVotes: [],
 			presentationId: presentation._id.toString(),
 		}
-		this.rooms[roomId] = room;
+		const slides = presentation.slides;
+		room.slides = slides.map(slide => slide._id.toString());
+		await this.redisService.setEx(`room-${roomId}`, JSON.stringify(room));
+		for (const slide of slides) {
+			await this.redisService.setEx(`room-${roomId}-slide-${slide._id}`, JSON.stringify(slide));
+		}
 		this.members[user._id] = {
 			...user,
 			roomId,
@@ -82,7 +87,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	}
 
 	@SubscribeMessage('join-room')
-	public joinRoom(client: any, room): void {
+	public async joinRoom(client: any, room): Promise<void> {
 		const user = client.user;
 		const { roomId } = room;
 		if (this.members[user._id]?.roomId === roomId) {
@@ -95,9 +100,9 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			...user,
 			roomId
 		}
-		const roomDetail = this.rooms[roomId];
+		const roomInfo = await this.redisService.getJson(`room-${roomId}`);
 		this.server.to(roomId).emit('wait-in-room', { type: 'info', message: `User ${user.email} joined room ${roomId}` });
-		this.server.to(client.id).emit('wait-join-room', { message: `You joined room ${roomId}`, data: roomDetail });
+		this.server.to(client.id).emit('wait-join-room', { message: `You joined room ${roomId}`, data: roomInfo });
 	}
 
 	@SubscribeMessage('leave-room')
@@ -119,25 +124,27 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`User ${user.email} is not joined any room`);
 			return;
 		}
-		const slide = this.rooms[roomId]?.slides.find(s => s._id.toString() === slideId);
-		if (!slide) {
-			this.server.to(client.id).emit('private-message', { message: `Slide ${slideId} not found` });
-			this.logger.log(`Slide ${slideId} not found or not belong to presentation`);
-			return;
-		}
-		const room = this.rooms[roomId];
+		const room = await this.redisService.getJson(`room-${roomId}`);
 		if (!room) {
 			this.server.to(client.id).emit('private-message', { message: `Room ${roomId} not found` });
 			this.logger.log(`Room ${roomId} not found`);
 			return;
 		}
+		const slide = await this.redisService.getJson(`room-${roomId}-slide-${slideId}`);
+		if (!slide) {
+			this.server.to(client.id).emit('private-message', { message: `Slide ${slideId} not found` });
+			this.logger.log(`Slide ${slideId} not found or not belong to presentation`);
+			return;
+		}
 		if (room.hostId !== user._id) {
+			console.log('room.hostId', room.hostId)
+			console.log('user._id', user._id)
+			console.log('room', room)
 			this.server.to(client.id).emit('private-message', { message: `You are not host of room ${roomId}` });
 			this.logger.log(`User ${user.email} is not host of room ${roomId}`);
 			return;
 		}
 		room.currentSlideId = slide._id.toString();
-		room.userVotes = [];
 		this.server.to(roomId).emit('wait-in-room', { type: 'new-slide', message: `Host ${user.email} started slide ${slideId}`, data: slide });
 	}
 
@@ -151,19 +158,19 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`User ${user.email} is not joined any room`);
 			return;
 		}
-		const room = this.rooms[roomId];
+		const room = await this.redisService.getJson(`room-${roomId}`);
 		if (!room) {
 			this.server.to(client.id).emit('private-message', { message: `Room ${roomId} not found` });
 			this.logger.log(`Room ${roomId} not found`);
 			return;
 		}
-		const slide = room.slides.find(s => s._id.toString() === slideId);
-		if (!slide) {
+		const roomSlide = await this.redisService.getJson(`room-${roomId}-slide-${slideId}`);
+		if (!roomSlide) {
 			this.server.to(client.id).emit('private-message', { message: `Slide ${slideId} not found` });
 			this.logger.log(`Slide ${slideId} not found or not belong to presentation`);
 			return;
 		}
-		const option = slide.options.find(o => o.index === optionIndex);
+		const option = roomSlide.options[optionIndex];
 		if (!option) {
 			this.server.to(client.id).emit('private-message', { message: `Option with index ${optionIndex} not found` });
 			this.logger.log(`Option with index ${optionIndex} not found`);
@@ -176,15 +183,16 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		// 	return;
 		// }
 		//check if user already voted
-		const isUserVoted = room.userVotes?.includes(user._id.toString());
+		const isUserVoted = roomSlide.userVotes.includes(user._id.toString());
 		if (isUserVoted) {
 			this.server.to(client.id).emit('private-message', { message: `User ${user.email} already voted` });
 			this.logger.log(`User ${user.email} already voted`);
 			return;
 		}
 		option.quantity += 1;
-		room.userVotes.push(user._id.toString());
-		this.server.to(roomId).emit('wait-in-room', { type: 'new-vote', message: `Member ${user.email} voted for option ${optionIndex}`, data: slide.options });
+		roomSlide.userVotes.push(user._id.toString());
+		await this.redisService.setEx(`room-${roomId}-slide-${slideId}`, JSON.stringify(roomSlide));
+		this.server.to(roomId).emit('wait-in-room', { type: 'new-vote', message: `Member ${user.email} voted for option ${optionIndex}`, data: roomSlide.options });
 	}
 
 	@SubscribeMessage('host-stop-presentation')
@@ -197,7 +205,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`User ${user.email} is not joined any room`);
 			return;
 		}
-		const room = this.rooms[roomId];
+		const room = await this.redisService.getJson(`room-${roomId}`);
 		if (!room) {
 			this.server.to(client.id).emit('private-message', { message: `Room ${roomId} not found` });
 			this.logger.log(`Room ${roomId} not found`);
@@ -214,9 +222,31 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			return;
 		}
 		//update all options in each slide to new quantity, save to mongodb
-		room.slides.forEach(async (slide) => {
+		const roomSlideIds = room.slides;
+		roomSlideIds.forEach(async (slideId) => {
+			const slide = await this.redisService.getJson(`room-${roomId}-slide-${slideId}`);
 			await this.slideService.update(slide._id, { options: slide.options }, user._id);
 		});
 		this.server.to(roomId).emit('wait-in-room', { type: 'stop-presentation', message: `Host ${user.email} stopped presentation ${presentationId}` });
+	}
+
+	//chat function
+	@SubscribeMessage('member-chat')
+	public async memberChat(client: any, data: any): Promise<void> {
+		const user = client.user;
+		const { message } = data;
+		const roomId = this.members[user._id]?.roomId;
+		if (!roomId) {
+			this.server.to(client.id).emit('private-message', { message: `Please join room first` });
+			this.logger.log(`User ${user.email} is not joined any room`);
+			return;
+		}
+		const room = await this.redisService.getJson(`room-${roomId}`);
+		if (!room) {
+			this.server.to(client.id).emit('private-message', { message: `Room ${roomId} not found` });
+			this.logger.log(`Room ${roomId} not found`);
+			return;
+		}
+		this.server.to(roomId).emit('wait-in-room', { type: 'new-chat', message: `Member ${user.email} sent a message`, data: { message, user, time: new Date() } });
 	}
 }

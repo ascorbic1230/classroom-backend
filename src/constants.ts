@@ -6,5 +6,6 @@ export enum RoleInGroup {
 
 export enum SlideType {
 	MULTIPLE_CHOICE = 'MULTIPLE_CHOICE',
-	TRUE_FALSE = 'TRUE_FALSE',
+	HEADING = 'HEADING',
+	PARAGRAPH = 'PARAGRAPH',
 }

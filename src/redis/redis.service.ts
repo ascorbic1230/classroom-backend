@@ -60,12 +60,19 @@ export class RedisService
 		}
 	}
 
-	getAsync(key: string) {
+	get(key: string) {
 		return this.client.get(key);
 	}
 
-	setAsync(key: string, value: unknown) {
-		console.log('this.client', this.client)
-		return this.client.set(key, value)
+	set(key: string, value: unknown) {
+		return this.client.set(key, value);
+	}
+
+	setEx(key: string, value: unknown) {
+		return this.client.set(key, value, 'EX', 60 * 60 * 24); //1d
+	}
+
+	async getJson(key: string) {
+		return JSON.parse(await this.client.get(key));
 	}
 }

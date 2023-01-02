@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
+import { RedisModule } from "src/redis/redis.module";
 import { PresentationModule } from "../presentation/presentation.module";
 import { SlideModule } from "../slide/slide.module";
 import { UserModule } from "../user/user.module";
@@ -10,6 +11,7 @@ import { EventsGateway } from './events.gateway';
 	imports: [SlideModule,
 		UserModule,
 		PresentationModule,
+		RedisModule,
 		JwtModule.registerAsync({
 			useFactory: (configService: ConfigService) => ({
 				secret: configService.get('JWT_SECRET'),
