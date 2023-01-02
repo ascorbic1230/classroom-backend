@@ -75,7 +75,7 @@ export class PresentationService {
 		});
 		// bad code
 		const result = presentation.toObject();
-		result.slides = [{ title: slide.title, slideType: slide.slideType, options: slide.options, answer: slide.answer, _id: slide._id }];
+		result.slides = [{ title: slide.title, content: slide.content, slideType: slide.slideType, options: slide.options, answer: slide.answer, _id: slide._id }];
 		return result;
 	}
 
