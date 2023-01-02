@@ -7,12 +7,14 @@ import { GroupModule } from "./group/group.module";
 import { PresentationModule } from "./presentation/presentation.module";
 import { SlideModule } from "./slide/slide.module";
 import { EventsModule } from "./events/events.module";
+import { RedisModule } from "./redis/redis.module";
 
 @Module({
 	imports: [
 		ConfigurationModule,
 		AuthModule,
 		GroupModule,
+		RedisModule,
 		SlideModule,
 		EventsModule,
 		PresentationModule
