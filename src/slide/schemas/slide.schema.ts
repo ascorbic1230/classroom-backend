@@ -12,9 +12,6 @@ export class SlideModel {
 	title: string;
 
 	@Prop({ type: String })
-	heading: string;
-
-	@Prop({ type: String })
 	content: string;
 
 	@Prop({ type: String, default: SlideType.MULTIPLE_CHOICE })

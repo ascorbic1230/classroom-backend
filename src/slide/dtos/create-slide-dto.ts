@@ -15,10 +15,6 @@ export class CreateSlideDto {
 
 	@IsString()
 	@IsOptional()
-	heading?: string;
-
-	@IsString()
-	@IsOptional()
 	content?: string;
 
 	@IsEnum(SlideType, { message: 'slideType must be MULTIPLE_CHOICE, HEADING or PARAGRAPH' })

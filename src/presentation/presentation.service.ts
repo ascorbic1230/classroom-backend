@@ -37,7 +37,7 @@ export class PresentationService {
 		});
 		const [total, data] = await Promise.all([
 			this.presentationModel.count(_query),
-			this.presentationModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: SlideModel.name, 'select': 'title heading content slideType options answer' }).lean()
+			this.presentationModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: SlideModel.name, 'select': 'title content slideType options answer' }).lean()
 		]);
 		return {
 			statusCode: HttpStatus.OK,
@@ -53,12 +53,12 @@ export class PresentationService {
 	}
 
 	async findById(id: string): Promise<any> {
-		const presentation = await this.presentationModel.findById(id).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title heading content slideType options answer' }).lean();
+		const presentation = await this.presentationModel.findById(id).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title content slideType options answer' }).lean();
 		return presentation;
 	}
 
 	findMyPresentation(userId: string) {
-		return this.presentationModel.find({ userCreated: userId }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title heading content slideType options answer' }).lean();
+		return this.presentationModel.find({ userCreated: userId }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title content slideType options answer' }).lean();
 	}
 
 	async create(data: PresentationDto, userId: string) {
