@@ -75,4 +75,9 @@ export class RedisService
 	async getJson(key: string) {
 		return JSON.parse(await this.client.get(key));
 	}
+
+	push(key: string, value: unknown) {
+		console.log('this.client', this.client)
+		return this.client.lPush(key, value);
+	}
 }

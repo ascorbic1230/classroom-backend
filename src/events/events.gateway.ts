@@ -137,9 +137,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			return;
 		}
 		if (room.hostId !== user._id) {
-			console.log('room.hostId', room.hostId)
-			console.log('user._id', user._id)
-			console.log('room', room)
 			this.server.to(client.id).emit('private-message', { message: `You are not host of room ${roomId}` });
 			this.logger.log(`User ${user.email} is not host of room ${roomId}`);
 			return;
@@ -247,6 +244,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`Room ${roomId} not found`);
 			return;
 		}
+		await this.redisService.push(`room-${roomId}-chat`, JSON.stringify({ message, user, time: new Date() }));
 		this.server.to(roomId).emit('wait-in-room', { type: 'new-chat', message: `Member ${user.email} sent a message`, data: { message, user, time: new Date() } });
 	}
 }
