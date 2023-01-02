@@ -13,7 +13,15 @@ export class CreateSlideDto {
 	@IsOptional()
 	title?: string;
 
-	@IsEnum(SlideType)
+	@IsString()
+	@IsOptional()
+	heading?: string;
+
+	@IsString()
+	@IsOptional()
+	content?: string;
+
+	@IsEnum(SlideType, { message: 'slideType must be MULTIPLE_CHOICE, HEADING or PARAGRAPH' })
 	@IsOptional()
 	slideType?: SlideType;
 
