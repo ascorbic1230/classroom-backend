@@ -18,11 +18,8 @@ export class SlideModel {
 	slideType: SlideType;
 
 	//options (array of object {value: string, image: string})
-	@Prop({ type: [{ value: String, image: String, quantity: Number, _id: false }], default: [] })
+	@Prop({ type: [{ value: String, image: String, quantity: Number, _id: false }] })
 	options: { value: string, image: string, quantity: number }[];
-
-	@Prop({ type: [String], default: [] })
-	answer: string[];
 
 	@Prop({ type: Types.ObjectId, ref: 'presentations' })
 	presentationId: { type: Types.ObjectId, ref: 'presentations' };

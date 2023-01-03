@@ -1,6 +1,6 @@
 import { forwardRef, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Mongoose, ObjectId, Types } from 'mongoose';
 import { get } from 'lodash';
 import { SlideModel, SlideDocument } from './schemas/slide.schema';
 import { sanitizePageSize } from "../utils";
@@ -10,6 +10,7 @@ import { ConfigService } from "@nestjs/config";
 import { CreateSlideDto } from "./dtos/create-slide-dto";
 import { UpdateSlideDto } from "./dtos/update-slide-dto";
 import { PresentationService } from "../presentation/presentation.service";
+import { SlideType } from "src/constants";
 @Injectable()
 export class SlideService {
 
@@ -64,12 +65,17 @@ export class SlideService {
 		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 		const presentationId = data.presentationId;
 		if (!presentationId) throw new HttpException('Presentation id is required', HttpStatus.BAD_REQUEST);
-		const slide = await this.slideModel.create({
-			...data,
+		const slide = new this.slideModel({
 			userCreated: userId,
 			userUpdated: userId,
 		});
-		return slide;
+		if (data.slideType === SlideType.MULTIPLE_CHOICE)
+			data.content = undefined;
+		else
+			data.options = undefined;
+		slide.set(data);
+		const result = await slide.save();
+		return result;
 	}
 
 	async create(data: CreateSlideDto, userId: string) {
@@ -83,11 +89,13 @@ export class SlideService {
 		const slide = await this.slideModel.findById(id);
 		if (!slide) throw new HttpException('Slide not found', HttpStatus.NOT_FOUND);
 		if (slide.userCreated.toString() !== userId) throw new HttpException('You do not have permission to update this slide', HttpStatus.FORBIDDEN);
-		const result = await this.slideModel.findOneAndUpdate({ _id: id }, {
-			...data,
-			userUpdated: userId,
-		}, { new: true });
-		await this.presentationService.update(slide.presentationId.toString(), {}, userId);
+		if (data.slideType === SlideType.MULTIPLE_CHOICE)
+			data.content = undefined;
+		else
+			data.options = undefined;
+		slide.set(data);
+		slide.userUpdated = userId as any;
+		const result = await slide.save();
 		return result;
 	}
 

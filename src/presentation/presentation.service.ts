@@ -10,6 +10,7 @@ import { ConfigService } from "@nestjs/config";
 import { PresentationDto } from "./dtos/presentation-dto";
 import { SlideService } from "../slide/slide.service";
 import { SlideModel } from "../slide/schemas/slide.schema";
+import { SlideType } from "src/constants";
 @Injectable()
 export class PresentationService {
 
@@ -37,7 +38,7 @@ export class PresentationService {
 		});
 		const [total, data] = await Promise.all([
 			this.presentationModel.count(_query),
-			this.presentationModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: SlideModel.name, 'select': 'title content slideType options answer' }).lean()
+			this.presentationModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: SlideModel.name, 'select': 'title content slideType options' }).lean()
 		]);
 		return {
 			statusCode: HttpStatus.OK,
@@ -53,19 +54,19 @@ export class PresentationService {
 	}
 
 	async findById(id: string): Promise<any> {
-		const presentation = await this.presentationModel.findById(id).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title content slideType options answer' }).lean();
+		const presentation = await this.presentationModel.findById(id).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title content slideType options ' }).lean();
 		return presentation;
 	}
 
 	findMyPresentation(userId: string) {
-		return this.presentationModel.find({ userCreated: userId }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title content slideType options answer' }).lean();
+		return this.presentationModel.find({ userCreated: userId }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title content slideType options ' }).lean();
 	}
 
 	async create(data: PresentationDto, userId: string) {
 		const user = await this.userService.findById(userId);
 		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 		const presentationId = new Types.ObjectId();
-		const slide = await this.slideService.createSlideOnly({ presentationId: presentationId.toString() }, userId);
+		const slide = await this.slideService.createSlideOnly({ presentationId: presentationId.toString(), slideType: SlideType.MULTIPLE_CHOICE }, userId);
 		const presentation = await this.presentationModel.create({
 			...data,
 			slides: [slide._id],
@@ -75,7 +76,7 @@ export class PresentationService {
 		});
 		// bad code
 		const result = presentation.toObject();
-		result.slides = [{ title: slide.title, content: slide.content, slideType: slide.slideType, options: slide.options, answer: slide.answer, _id: slide._id }];
+		result.slides = [{ title: slide.title, content: slide.content, options: slide.options, slideType: slide.slideType, _id: slide._id }];
 		return result;
 	}
 
