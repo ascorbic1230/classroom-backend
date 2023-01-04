@@ -11,14 +11,14 @@ export class SlideModel {
 	@Prop({ type: String, default: 'New Slide' })
 	title: string;
 
-	@Prop({ type: String })
+	@Prop({ type: String, default: '' })
 	content: string;
 
 	@Prop({ type: String, default: SlideType.MULTIPLE_CHOICE })
 	slideType: SlideType;
 
 	//options (array of object {value: string, image: string})
-	@Prop({ type: [{ value: String, image: String, quantity: Number, _id: false }] })
+	@Prop({ type: [{ value: String, image: String, quantity: Number, _id: false }], default: [] })
 	options: { value: string, image: string, quantity: number }[];
 
 	@Prop({ type: Types.ObjectId, ref: 'presentations' })

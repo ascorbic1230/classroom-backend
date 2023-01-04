@@ -69,10 +69,12 @@ export class SlideService {
 			userCreated: userId,
 			userUpdated: userId,
 		});
-		if (data.slideType === SlideType.MULTIPLE_CHOICE)
-			data.content = undefined;
-		else
-			data.options = undefined;
+		if (data.slideType) {
+			if (data.slideType === SlideType.MULTIPLE_CHOICE)
+				data.content = '';
+			else
+				data.options = [];
+		}
 		slide.set(data);
 		const result = await slide.save();
 		return result;
@@ -89,10 +91,12 @@ export class SlideService {
 		const slide = await this.slideModel.findById(id);
 		if (!slide) throw new HttpException('Slide not found', HttpStatus.NOT_FOUND);
 		if (slide.userCreated.toString() !== userId) throw new HttpException('You do not have permission to update this slide', HttpStatus.FORBIDDEN);
-		if (data.slideType === SlideType.MULTIPLE_CHOICE)
-			data.content = undefined;
-		else
-			data.options = undefined;
+		if (data.slideType) {
+			if (data.slideType === SlideType.MULTIPLE_CHOICE)
+				data.content = '';
+			else
+				data.options = [];
+		}
 		slide.set(data);
 		slide.userUpdated = userId as any;
 		const result = await slide.save();
