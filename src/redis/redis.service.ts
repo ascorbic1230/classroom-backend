@@ -69,7 +69,7 @@ export class RedisService
 	}
 
 	setEx(key: string, value: unknown) {
-		return this.client.set(key, value, 'EX', 60 * 60 * 24); //1d
+		return this.client.set(key, value, 'EX', 60 * 60 * 1); // 1 hour
 	}
 
 	async getJson(key: string) {
@@ -80,9 +80,21 @@ export class RedisService
 		return this.client.lPush(key, value);
 	}
 
+	pushEx(key: string, value: unknown) {
+		return this.client.lPush(key, value, 'EX', 60 * 60 * 1); // 1 hour
+	}
+
 	getListJson(key: string) {
 		return this.client.lRange(key, 0, -1).then((list: string[]) => {
 			return list.map((item) => JSON.parse(item));
 		});
+	}
+
+	getList(key: string) {
+		return this.client.lRange(key, 0, -1);
+	}
+
+	delete(key: string) {
+		return this.client.del(key);
 	}
 }

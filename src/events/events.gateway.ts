@@ -15,6 +15,7 @@ import { RedisService } from "src/redis/redis.service";
 import { CreateRoomDto } from "./dtos/create-room-dto";
 import { RoleInGroup, RoomType } from "src/constants";
 import { GroupService } from "src/group/group.service";
+import * as crypto from 'crypto';
 
 @WebSocketGateway({
 	cors: {
@@ -45,10 +46,11 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		this.logger.log('Init');
 	}
 
+	//user has to be a member of group to start-presentation, and they will be the host
 	@SubscribeMessage('host-create-room')
 	@UsePipes(new ValidationPipe({ transform: true }))
 	public async handleHostCreateRoomEvent(client: any, data: CreateRoomDto): Promise<void> {
-		const user = client.user;
+		const { user } = client
 		const { presentationId, roomType, groupId } = data;
 		const presentation = await this.presentationService.findById(presentationId);
 		if (!presentation) {
@@ -60,12 +62,13 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.server.to(client.id).emit('private-message', { message: `Room type is invalid` });
 			return;
 		}
+		let group;
 		if (roomType === RoomType.GROUP) {
 			if (!groupId) {
 				this.server.to(client.id).emit('private-message', { message: `Group id is required` });
 				return;
 			}
-			const group = await this.groupService.findById(groupId);
+			group = await this.groupService.findById(groupId);
 			if (!group) {
 				this.server.to(client.id).emit('private-message', { message: `Group not found` });
 				return;
@@ -75,7 +78,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 				this.server.to(client.id).emit('private-message', { message: `You are not in this group` });
 				return;
 			}
-			//TODO: uncomment this when ready for production
+			//TODO: uncomment below
 			// if (userAndRole.role !== RoleInGroup.OWNER && userAndRole.role !== RoleInGroup.CO_OWNER) {
 			// 	this.server.to(client.id).emit('private-message', { message: `You are not owner or co-owner of this group` });
 			// 	return;
@@ -106,14 +109,25 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			hostId: user._id,
 			...presentation,
 		}
-		//set room if type=group
+		//terminate old room in redis if exist
 		if (roomType === RoomType.GROUP) {
 			const oldRoom = await this.redisService.getJson(`group-${groupId}`);
 			if (oldRoom) {
-				this.server.to(oldRoom.roomId).emit('wait-in-room', { type: 'terminate', message: 'This room was terminated because group has new room' });
+				this.terminateRoom(client, { roomId: oldRoom.roomId });
+				// TODO: uncomment if needed
+				// this.server.to(client.id).emit('private-message', { message: `Old room ${oldRoom.roomId} was terminated` });
 			}
-			await this.redisService.setEx(`group-${groupId}`, JSON.stringify(room));
+			const roomInfo = {
+				roomId,
+				groupName: group.name,
+				presentationName: presentation.name,
+				presentationId,
+				startTime: new Date()
+			}
+			//
+			await this.redisService.setEx(`group-${groupId}`, JSON.stringify(roomInfo));
 		}
+		//set room if type=group
 		const slides = presentation.slides;
 		room.slides = slides.map(slide => slide._id.toString());
 		//set room basic info in redis
@@ -131,7 +145,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
 	@SubscribeMessage('join-room')
 	public async joinRoom(client: any, room): Promise<void> {
-		const user = client.user;
+		const { user } = client
 		const { roomId } = room;
 		if (this.members[user._id]?.roomId === roomId) {
 			this.server.to(client.id).emit('private-message', { message: `You already joined room ${roomId}` });
@@ -150,7 +164,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
 	@SubscribeMessage('leave-room')
 	public leaveRoom(client: any, room): void {
-		const user = client.user;
+		const { user } = client
 		const { roomId } = room;
 		client.leave(roomId);
 		delete this.members[user._id];
@@ -159,7 +173,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
 	@SubscribeMessage('host-start-slide')
 	public async hostStartSlide(client: any, data: any): Promise<void> {
-		const user = client.user;
+		const { user } = client
 		const { slideId } = data;
 		const roomId = this.members[user._id]?.roomId;
 		if (!roomId) {
@@ -190,7 +204,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
 	@SubscribeMessage('member-vote')
 	public async memberVote(client: any, data: any): Promise<void> {
-		const user = client.user;
+		const { user } = client
 		const { slideId, optionIndex } = data;
 		const roomId = this.members[user._id]?.roomId;
 		if (!roomId) {
@@ -204,13 +218,13 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`Room ${roomId} not found`);
 			return;
 		}
-		const roomSlide = await this.redisService.getJson(`room-${roomId}-slide-${slideId}`);
-		if (!roomSlide) {
+		const slide = await this.redisService.getJson(`room-${roomId}-slide-${slideId}`);
+		if (!slide) {
 			this.server.to(client.id).emit('private-message', { message: `Slide ${slideId} not found` });
 			this.logger.log(`Slide ${slideId} not found or not belong to presentation`);
 			return;
 		}
-		const option = roomSlide.options[optionIndex];
+		const option = slide.options[optionIndex];
 		if (!option) {
 			this.server.to(client.id).emit('private-message', { message: `Option with index ${optionIndex} not found` });
 			this.logger.log(`Option with index ${optionIndex} not found`);
@@ -222,22 +236,22 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		// 	this.logger.log(`Slide ${slideId} is not current slide`);
 		// 	return;
 		// }
-		//check if user already voted
-		const isUserVoted = roomSlide.userVotes.includes(user._id.toString());
-		if (isUserVoted) {
-			this.server.to(client.id).emit('private-message', { message: `User ${user.email} already voted` });
-			this.logger.log(`User ${user.email} already voted`);
-			return;
-		}
+		//TODO: uncomment below
+		// const isUserVoted = roomSlide.userVotes.some((userVote) => userVote.userId === user._id.toString());
+		// if (isUserVoted) {
+		// 	this.server.to(client.id).emit('private-message', { message: `User ${user.email} already voted` });
+		// 	this.logger.log(`User ${user.email} already voted`);
+		// 	return;
+		// }
 		option.quantity += 1;
-		roomSlide.userVotes.push(user._id.toString());
-		await this.redisService.setEx(`room-${roomId}-slide-${slideId}`, JSON.stringify(roomSlide));
-		this.server.to(roomId).emit('wait-in-room', { type: 'new-vote', message: `Member ${user.email} voted for option ${optionIndex}`, data: roomSlide.options });
+		slide.userVotes.push({ userId: user._id.toString(), optionIndex, createdAt: new Date() });
+		await this.redisService.setEx(`room-${roomId}-slide-${slideId}`, JSON.stringify(slide));
+		this.server.to(roomId).emit('wait-in-room', { type: 'new-vote', message: `Member ${user.email} voted for option ${optionIndex}`, data: slide.options });
 	}
 
 	@SubscribeMessage('host-stop-presentation')
 	public async hostStopPresentation(client: any, data: any): Promise<void> {
-		const user = client.user;
+		const { user } = client
 		const { presentationId } = data;
 		const roomId = this.members[user._id]?.roomId;
 		if (!roomId) {
@@ -270,10 +284,33 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		this.server.to(roomId).emit('wait-in-room', { type: 'stop-presentation', message: `Host ${user.email} stopped presentation ${presentationId}` });
 	}
 
+	@SubscribeMessage('user-terminate-room')
+	public async terminateRoom(client: any, data: any): Promise<void> {
+		const { user } = client
+		const { roomId } = data;
+		const room = await this.redisService.getJson(`room-${roomId}`);
+		if (!room) {
+			this.server.to(client.id).emit('private-message', { message: `Room ${roomId} not found` });
+			this.logger.log(`Room ${roomId} not found`);
+			return;
+		}
+		//delete slides
+		const roomSlideIds = room.slides;
+		roomSlideIds.forEach(async (slideId) => {
+			await this.redisService.delete(`room-${roomId}-slide-${slideId}`);
+		}
+		);
+		//delete room
+		await this.redisService.delete(`room-${roomId}`);
+		//delete member
+		delete this.members[user._id];
+		this.server.to(roomId).emit('wait-in-room', { type: 'terminate-room', message: `User ${user.email} terminated room ${roomId}` });
+	}
+
 	//chat function
 	@SubscribeMessage('member-chat')
 	public async memberChat(client: any, data: any): Promise<void> {
-		const user = client.user;
+		const { user } = client
 		const { message } = data;
 		const roomId = this.members[user._id]?.roomId;
 		if (!roomId) {
@@ -287,7 +324,90 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`Room ${roomId} not found`);
 			return;
 		}
-		await this.redisService.push(`room-${roomId}-chat`, JSON.stringify({ message, user, time: new Date() }));
+		await this.redisService.pushEx(`room-${roomId}-chat`, JSON.stringify({ message, user, time: new Date() }));
 		this.server.to(roomId).emit('wait-in-room', { type: 'new-chat', message: `Member ${user.email} sent a message`, data: { message, user, time: new Date() } });
+	}
+
+	//question function
+	@SubscribeMessage('member-question')
+	public async memberAskQuestion(client: any, data: any): Promise<void> {
+		const { user } = client
+		const { question } = data;
+		const roomId = this.members[user._id]?.roomId;
+		if (!roomId) {
+			this.server.to(client.id).emit('private-message', { message: `Please join room first` });
+			this.logger.log(`User ${user.email} is not joined any room`);
+			return;
+		}
+		const room = await this.redisService.getJson(`room-${roomId}`);
+		if (!room) {
+			this.server.to(client.id).emit('private-message', { message: `Room ${roomId} not found` });
+			this.logger.log(`Room ${roomId} not found`);
+			return;
+		}
+		const questionId = crypto.randomUUID();
+		await this.redisService.pushEx(`room-${roomId}-question`, questionId);
+		const questionDetail = { questionId, question, totalVotes: 0, isAnswered: false, user, time: new Date() }
+		await this.redisService.setEx(`room-${roomId}-question-${questionId}`, JSON.stringify(questionDetail));
+		this.server.to(roomId).emit('wait-in-room', {
+			type: 'new-question', message: `Member ${user.email} asked a question`, data: questionDetail
+		});
+	}
+
+	//upvote function
+	@SubscribeMessage('member-upvote-question')
+	public async memberUpvoteQuestion(client: any, data: any): Promise<void> {
+		const { user } = client
+		const { questionId } = data;
+		const roomId = this.members[user._id]?.roomId;
+		if (!roomId) {
+			this.server.to(client.id).emit('private-message', { message: `Please join room first` });
+			this.logger.log(`User ${user.email} is not joined any room`);
+			return;
+		}
+		const room = await this.redisService.getJson(`room-${roomId}`);
+		if (!room) {
+			this.server.to(client.id).emit('private-message', { message: `Room ${roomId} not found` });
+			this.logger.log(`Room ${roomId} not found`);
+			return;
+		}
+		const questionDetail = await this.redisService.getJson(`room-${roomId}-question-${questionId}`);
+		if (!questionDetail) {
+			this.server.to(client.id).emit('private-message', { message: `Question ${questionId} not found` });
+			this.logger.log(`Question ${questionId} not found`);
+			return;
+		}
+		// TODO: Question must be from other user & Can't upvote twice.
+		questionDetail.totalVotes++;
+		await this.redisService.setEx(`room-${roomId}-question-${questionId}`, JSON.stringify(questionDetail));
+		this.server.to(roomId).emit('wait-in-room', { type: 'upvote-question', message: `Member ${user.email} upvoted question ${questionId}`, data: questionDetail });
+	}
+
+	//answer function
+	@SubscribeMessage('host-answer-question')
+	public async memberAnswerQuestion(client: any, data: any): Promise<void> {
+		const { user } = client
+		const { questionId } = data;
+		const roomId = this.members[user._id]?.roomId;
+		if (!roomId) {
+			this.server.to(client.id).emit('private-message', { message: `Please join room first` });
+			this.logger.log(`User ${user.email} is not joined any room`);
+			return;
+		}
+		const room = await this.redisService.getJson(`room-${roomId}`);
+		if (!room) {
+			this.server.to(client.id).emit('private-message', { message: `Room ${roomId} not found` });
+			this.logger.log(`Room ${roomId} not found`);
+			return;
+		}
+		const questionDetail = await this.redisService.getJson(`room-${roomId}-question-${questionId}`);
+		if (!questionDetail) {
+			this.server.to(client.id).emit('private-message', { message: `Question ${questionId} not found` });
+			this.logger.log(`Question ${questionId} not found`);
+			return;
+		}
+		questionDetail.isAnswered = true;
+		await this.redisService.setEx(`room-${roomId}-question-${questionId}`, JSON.stringify(questionDetail));
+		this.server.to(roomId).emit('wait-in-room', { type: 'answer-question', message: `${user.email} mark question ${questionId} as answered`, data: questionDetail });
 	}
 }

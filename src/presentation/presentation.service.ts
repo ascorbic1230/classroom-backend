@@ -145,6 +145,36 @@ export class PresentationService {
 		const questions = await this.redisSerivce.getListJson(`room-${roomId}-question`);
 		if (questions) roomInfo.questions = questions;
 		return roomInfo;
+	}
 
+	//user will get this api every 5s to check if there is any new presentation
+	async checkActiveGroupPresentation(userId: string) {
+		const user = await this.userService.findById(userId);
+		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+		let activeGroups = [];
+		for (const group of user.groups) {
+			const activeGroup = await this.redisSerivce.getJson(`group-${group.toString()}`);
+			if (activeGroup) {
+				const minuteDiff = new Date().getMinutes() - new Date(activeGroup.startTime).getMinutes();
+				activeGroup.message = `Group ${activeGroup.groupName} is presenting (${minuteDiff} minutes before)`;
+				//join link mấy a tự tạo ở frontend nha
+				activeGroups.push(activeGroup);
+			}
+		}
+		return activeGroups;
+	}
+
+	async getSubmitResult(roomId: string, userId: string) {
+		const user = await this.userService.findById(userId);
+		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+		const roomInfo = await this.redisSerivce.getJson(`room-${roomId}`);
+		if (!roomInfo) throw new HttpException('Room not found', HttpStatus.NOT_FOUND);
+		//TODO: check userId role in group, etc...
+		let results = [];
+		for (const slideId of roomInfo.slides) {
+			const result = await this.redisSerivce.getJson(`room-${roomId}-slide-${slideId}`);
+			if (result) results.push(result);
+		}
+		return results;
 	}
 }
