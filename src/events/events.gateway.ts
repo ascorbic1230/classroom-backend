@@ -384,6 +384,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	}
 
 	//answer function
+	//TODO: check owner & co-owner only
 	@SubscribeMessage('host-answer-question')
 	public async memberAnswerQuestion(client: any, data: any): Promise<void> {
 		const { user } = client

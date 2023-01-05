@@ -142,8 +142,8 @@ export class PresentationService {
 		}
 		const chats = await this.redisSerivce.getListJson(`room-${roomId}-chat`);
 		if (chats) roomInfo.chats = chats;
-		const questions = await this.redisSerivce.getListJson(`room-${roomId}-question`);
-		if (questions) roomInfo.questions = questions;
+		// const questions = await this.redisSerivce.getListJson(`room-${roomId}-question`);
+		// if (questions) roomInfo.questions = questions;
 		return roomInfo;
 	}
 
