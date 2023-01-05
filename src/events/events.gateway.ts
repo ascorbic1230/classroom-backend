@@ -158,7 +158,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			roomId
 		}
 		const roomInfo = await this.redisService.getJson(`room-${roomId}`);
-		this.server.to(roomId).emit('wait-in-room', { type: 'info', message: `User ${user.email} joined room ${roomId}` });
+		this.server.to(roomId).emit('wait-in-room', { type: 'info', message: `User ${user.email} joined room ${roomId}`, data: roomInfo });
 		this.server.to(client.id).emit('wait-join-room', { message: `You joined room ${roomId}`, data: roomInfo });
 	}
 
