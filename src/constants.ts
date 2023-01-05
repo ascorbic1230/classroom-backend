@@ -9,3 +9,8 @@ export enum SlideType {
 	HEADING = 'HEADING',
 	PARAGRAPH = 'PARAGRAPH',
 }
+
+export enum RoomType {
+	GROUP = 'GROUP',
+	PUBLIC = 'PUBLIC',
+}

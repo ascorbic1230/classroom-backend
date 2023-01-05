@@ -1,4 +1,4 @@
-import { Logger, UseGuards } from "@nestjs/common";
+import { Logger, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import {
 	OnGatewayConnection,
 	OnGatewayDisconnect,
@@ -12,6 +12,9 @@ import { SlideService } from "../slide/slide.service";
 import { WsJwtAuthGuard } from "../guards/ws-jwt.guard";
 import { PresentationService } from "../presentation/presentation.service";
 import { RedisService } from "src/redis/redis.service";
+import { CreateRoomDto } from "./dtos/create-room-dto";
+import { RoleInGroup, RoomType } from "src/constants";
+import { GroupService } from "src/group/group.service";
 
 @WebSocketGateway({
 	cors: {
@@ -22,7 +25,7 @@ import { RedisService } from "src/redis/redis.service";
 export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
 	private readonly logger: Logger;
 	private members: any[] = [];
-	constructor(private readonly slideService: SlideService, private readonly presentationService: PresentationService, private readonly redisService: RedisService) {
+	constructor(private readonly slideService: SlideService, private readonly presentationService: PresentationService, private readonly redisService: RedisService, private readonly groupService: GroupService) {
 		this.logger = new Logger(EventsGateway.name);
 	}
 
@@ -43,14 +46,42 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	}
 
 	@SubscribeMessage('host-create-room')
-	public async handleHostCreateRoomEvent(client: any, data: any): Promise<void> {
+	@UsePipes(new ValidationPipe({ transform: true }))
+	public async handleHostCreateRoomEvent(client: any, data: CreateRoomDto): Promise<void> {
 		const user = client.user;
-		const { presentationId } = data;
+		const { presentationId, roomType, groupId } = data;
 		const presentation = await this.presentationService.findById(presentationId);
 		if (!presentation) {
-			this.server.emit('wait-host-create-room', { message: 'Presentation not found' });
+			this.server.to(client.id).emit('private-message', { message: `Presentation not found` });
 			return;
 		}
+		//TODO: check if user has permission with presentation
+		if (roomType !== RoomType.PUBLIC && roomType !== RoomType.GROUP) {
+			this.server.to(client.id).emit('private-message', { message: `Room type is invalid` });
+			return;
+		}
+		if (roomType === RoomType.GROUP) {
+			if (!groupId) {
+				this.server.to(client.id).emit('private-message', { message: `Group id is required` });
+				return;
+			}
+			const group = await this.groupService.findById(groupId);
+			if (!group) {
+				this.server.to(client.id).emit('private-message', { message: `Group not found` });
+				return;
+			}
+			const userAndRole = await group.usersAndRoles.find(item => item.user._id.toString() === user._id.toString());
+			if (!userAndRole) {
+				this.server.to(client.id).emit('private-message', { message: `You are not in this group` });
+				return;
+			}
+			//TODO: uncomment this when ready for production
+			// if (userAndRole.role !== RoleInGroup.OWNER && userAndRole.role !== RoleInGroup.CO_OWNER) {
+			// 	this.server.to(client.id).emit('private-message', { message: `You are not owner or co-owner of this group` });
+			// 	return;
+			// }
+		}
+		// TODO: if presentation is group, check if these is any presentation has type is group and groupId is same in redis
 		// Reset quantity of options to 0, and set index to it
 		for (const slide of presentation.slides) {
 			slide.options = slide.options.map((option, index) => {
@@ -66,16 +97,28 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		const roomId = Math.random().toString(36).slice(2, 10);
 		//let host join room
 		client.join(roomId);
+		delete presentation._id;
 		const room = {
+			presentationId,
+			roomType,
+			groupId,
 			roomId,
 			hostId: user._id,
 			...presentation,
-			userVotes: [],
-			presentationId: presentation._id.toString(),
+		}
+		//set room if type=group
+		if (roomType === RoomType.GROUP) {
+			const oldRoom = await this.redisService.getJson(`group-${groupId}`);
+			if (oldRoom) {
+				this.server.to(oldRoom.roomId).emit('wait-in-room', { type: 'terminate', message: 'This room was terminated because group has new room' });
+			}
+			await this.redisService.setEx(`group-${groupId}`, JSON.stringify(room));
 		}
 		const slides = presentation.slides;
 		room.slides = slides.map(slide => slide._id.toString());
+		//set room basic info in redis
 		await this.redisService.setEx(`room-${roomId}`, JSON.stringify(room));
+		//set each slide in redis
 		for (const slide of slides) {
 			await this.redisService.setEx(`room-${roomId}-slide-${slide._id}`, JSON.stringify(slide));
 		}
@@ -83,7 +126,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			...user,
 			roomId,
 		}
-		this.server.emit('wait-host-create-room', { roomId, message: `You are host of room ${roomId}`, data: room });
+		this.server.to(client.id).emit('wait-host-create-room', { roomId, message: `You are host of room ${roomId}`, data: room });
 	}
 
 	@SubscribeMessage('join-room')

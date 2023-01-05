@@ -10,7 +10,8 @@ import { ConfigService } from "@nestjs/config";
 import { PresentationDto } from "./dtos/presentation-dto";
 import { SlideService } from "../slide/slide.service";
 import { SlideModel } from "../slide/schemas/slide.schema";
-import { SlideType } from "src/constants";
+import { RoomType, SlideType } from "src/constants";
+import { RedisService } from "src/redis/redis.service";
 @Injectable()
 export class PresentationService {
 
@@ -19,7 +20,8 @@ export class PresentationService {
 		private readonly userService: UserService,
 		@Inject(forwardRef(() => SlideService))
 		private readonly slideService: SlideService,
-		private readonly configService: ConfigService
+		private readonly configService: ConfigService,
+		private readonly redisSerivce: RedisService
 	) { }
 
 	//Admin Route
@@ -91,7 +93,6 @@ export class PresentationService {
 	}
 
 	async delete(id: string, userId: string) {
-		//TODO: When delete presentation, slides should be deleted too
 		const presentation = await this.presentationModel.findById(id);
 		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
 		if (presentation.userCreated.toString() !== userId) throw new HttpException('You do not have permission to delete this presentation', HttpStatus.FORBIDDEN);
@@ -128,5 +129,22 @@ export class PresentationService {
 			}
 		});
 		return presentation;
+	}
+
+	async getSocketRoom(roomId: string, userId: string) {
+		const user = await this.userService.findById(userId);
+		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+		const roomInfo = await this.redisSerivce.getJson(`room-${roomId}`);
+		if (!roomInfo) throw new HttpException('Room not found', HttpStatus.NOT_FOUND);
+		if (roomInfo.roomType === RoomType.GROUP) {
+			const isMyGroup = user.groups.find(group => group.toString() === roomInfo.groupId);
+			if (!isMyGroup) throw new HttpException('You do not have permission to join this room', HttpStatus.FORBIDDEN);
+		}
+		const chats = await this.redisSerivce.getListJson(`room-${roomId}-chat`);
+		if (chats) roomInfo.chats = chats;
+		const questions = await this.redisSerivce.getListJson(`room-${roomId}-question`);
+		if (questions) roomInfo.questions = questions;
+		return roomInfo;
+
 	}
 }

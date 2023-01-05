@@ -25,5 +25,6 @@ import { GroupModel, GroupSchema } from './schemas/group.schema';
 	],
 	controllers: [GroupController],
 	providers: [GroupService],
+	exports: [GroupService],
 })
 export class GroupModule { }

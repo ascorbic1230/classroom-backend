@@ -69,4 +69,16 @@ export class PresentationController {
 			message: 'Delete presentation successfully',
 		}
 	}
+
+	//check if has permission to socket room
+	@Get('get-socket-room/:id')
+	@UseGuards(JwtAuthGuard)
+	async getSocketRoom(@Req() req) {
+		const result = await this.presentationService.getSocketRoom(req.params.id, req.user._id);
+		return {
+			statusCode: HttpStatus.OK,
+			data: result,
+			message: 'You can join this room',
+		}
+	}
 }

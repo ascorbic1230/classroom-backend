@@ -7,6 +7,7 @@ import { PresentationController } from './presentation.controller';
 import { PresentationService } from './presentation.service';
 import { PresentationModel, PresentationSchema } from './schemas/presentation.schema';
 import { SlideModule } from "../slide/slide.module";
+import { RedisModule } from "src/redis/redis.module";
 
 @Module({
 	imports: [
@@ -15,6 +16,7 @@ import { SlideModule } from "../slide/slide.module";
 		]),
 		UserModule,
 		forwardRef(() => SlideModule),
+		RedisModule,
 		JwtModule.registerAsync({
 			useFactory: (configService: ConfigService) => ({
 				secret: configService.get('JWT_SECRET'),

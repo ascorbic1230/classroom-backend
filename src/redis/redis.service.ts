@@ -77,7 +77,12 @@ export class RedisService
 	}
 
 	push(key: string, value: unknown) {
-		console.log('this.client', this.client)
 		return this.client.lPush(key, value);
+	}
+
+	getListJson(key: string) {
+		return this.client.lRange(key, 0, -1).then((list: string[]) => {
+			return list.map((item) => JSON.parse(item));
+		});
 	}
 }

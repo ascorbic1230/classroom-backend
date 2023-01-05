@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
+import { GroupModule } from "src/group/group.module";
 import { RedisModule } from "src/redis/redis.module";
 import { PresentationModule } from "../presentation/presentation.module";
 import { SlideModule } from "../slide/slide.module";
@@ -11,6 +12,7 @@ import { EventsGateway } from './events.gateway';
 	imports: [SlideModule,
 		UserModule,
 		PresentationModule,
+		GroupModule,
 		RedisModule,
 		JwtModule.registerAsync({
 			useFactory: (configService: ConfigService) => ({
