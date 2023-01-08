@@ -86,7 +86,8 @@ export class PresentationService {
 	async update(id: string, data: PresentationDto, userId: string) {
 		const presentation = await this.presentationModel.findById(id);
 		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
-		if (presentation.userCreated.toString() !== userId) throw new HttpException('You do not have permission to update this presentation', HttpStatus.FORBIDDEN);
+		const hasPermission = presentation.userCreated.toString() === userId || presentation.collaborators.includes(userId);
+		if (!hasPermission) throw new HttpException('You do not have permission to update this presentation', HttpStatus.FORBIDDEN);
 		return this.presentationModel.findOneAndUpdate({ _id: id }, {
 			...data,
 			userUpdated: userId,
@@ -130,6 +131,20 @@ export class PresentationService {
 			}
 		});
 		return presentation;
+	}
+
+	async addCollaborator(id: string, data: { email: string }, userId: string) {
+		const presentation = await this.presentationModel.findById(id);
+		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
+		if (presentation.userCreated.toString() !== userId) throw new HttpException('You do not have permission to add collaborator to this presentation', HttpStatus.FORBIDDEN);
+		const collaboratorToAdd = await this.userService.findByEmail(data.email);
+		if (!collaboratorToAdd) throw new HttpException('Collaborator not found', HttpStatus.NOT_FOUND);
+		if (collaboratorToAdd._id.toString() === userId) throw new HttpException('You cannot add yourself as a collaborator', HttpStatus.BAD_REQUEST);
+		for (const collaborator of presentation.collaborators) {
+			if (collaborator.toString() === collaboratorToAdd._id.toString()) throw new HttpException('Collaborator already exists', HttpStatus.BAD_REQUEST);
+		}
+		presentation.collaborators.push(collaboratorToAdd._id);
+		return await presentation.save();
 	}
 
 	async getSocketRoom(roomId: string, userId: string) {
@@ -219,4 +234,5 @@ export class PresentationService {
 		}
 		return results;
 	}
+
 }

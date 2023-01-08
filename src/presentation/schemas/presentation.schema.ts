@@ -12,9 +12,9 @@ export class PresentationModel {
 
 	@Prop({ type: String, default: 'No Description' })
 	description: string;
-	
-	@Prop({ type: [{ type: Types.ObjectId, ref: 'users' }] })
-	collaborators: { type: Types.ObjectId, ref: 'users' }[];
+
+	@Prop({ type: [String] })
+	collaborators: string[];
 
 	@Prop({ type: [{ type: Types.ObjectId, ref: 'slides' }] })
 	slides: { type: Types.ObjectId, ref: 'slides' }[];
