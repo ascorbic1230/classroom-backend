@@ -6,7 +6,9 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import * as redis from 'redis';
+import { createClient, RedisClientType } from 'redis';
+
+import { REDIS_EXPIRE_TIME } from '../constants';
 
 @Injectable()
 export class RedisService
@@ -30,7 +32,7 @@ export class RedisService
 		const port = this.configService.get('REDIS_PORT');
 		const username = this.configService.get('REDIS_USERNAME');
 		const password = this.configService.get('REDIS_PASSWORD');
-		const client = redis.createClient({
+		const client: RedisClientType = createClient({
 			url: `redis://${username}:${password}@${host}:${port}`,
 			socket: {
 				tls: true
@@ -68,20 +70,21 @@ export class RedisService
 		return this.client.set(key, value);
 	}
 
-	setEx(key: string, value: unknown) {
-		return this.client.set(key, value, 'EX', 60 * 60 * 1); // 1 hour
-	}
-
 	async getJson(key: string) {
 		return JSON.parse(await this.client.get(key));
 	}
 
-	push(key: string, value: unknown) {
-		return this.client.lPush(key, value);
+	pushEx(key: string, value: unknown) {
+		return this.client.lPush(key, value).then(() => {
+			return this.client.expire(key, REDIS_EXPIRE_TIME);
+		}
+		);
 	}
 
-	pushEx(key: string, value: unknown) {
-		return this.client.lPush(key, value, 'EX', 60 * 60 * 1); // 1 hour
+	setEx(key: string, value: unknown) {
+		return this.client.set(key, value).then(() => {
+			return this.client.expire(key, REDIS_EXPIRE_TIME);
+		});
 	}
 
 	getListJson(key: string) {
@@ -96,5 +99,24 @@ export class RedisService
 
 	delete(key: string) {
 		return this.client.del(key);
+	}
+
+	getRangeInSetJson(key: string, start: number, end: number) {
+		return this.client.zRangeByScore(key, start, end).then((list: string[]) => {
+			return list.map((item) => JSON.parse(item));
+		});
+	}
+
+	//get total items in set
+	getSetLength(key: string) {
+		return this.client.zCard(key);
+	}
+
+	async addToSet(key: string, value: string) {
+		const total = await this.getSetLength(key);
+		return this.client.zAdd(key, [{ value, score: total }]).then(() => {
+			return this.client.expire(key, REDIS_EXPIRE_TIME);
+		}
+		);
 	}
 }

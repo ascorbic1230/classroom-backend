@@ -14,3 +14,5 @@ export enum RoomType {
 	GROUP = 'GROUP',
 	PUBLIC = 'PUBLIC',
 }
+
+export const REDIS_EXPIRE_TIME = 60 * 60 * 1;

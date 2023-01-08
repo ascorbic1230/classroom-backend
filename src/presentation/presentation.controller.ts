@@ -1,7 +1,8 @@
 import { JwtAuthGuard } from "../guards/jwt.guard";
-import { Query, Param, Controller, Get, UseGuards, Post, Req, Body, Put, HttpStatus, HttpException, Delete } from '@nestjs/common';
+import { Query, Param, Controller, Get, UseGuards, Post, Req, Body, Put, HttpStatus, HttpException, Delete, ValidationPipe, UsePipes } from '@nestjs/common';
 import { PresentationService } from "./presentation.service";
 import { PresentationDto } from "./dtos/presentation-dto";
+import { GetChatDto } from "./dtos/get-chat-dto";
 @Controller('presentation')
 export class PresentationController {
 	constructor(private readonly presentationService: PresentationService) { }
@@ -33,6 +34,29 @@ export class PresentationController {
 			statusCode: HttpStatus.OK,
 			data: result,
 			message: 'You can join this room',
+		}
+	}
+
+	@Get('get-socket-room/:id/chat')
+	@UseGuards(JwtAuthGuard)
+	async getChats(@Req() req, @Query() query: GetChatDto) {
+		const { data, meta } = await this.presentationService.getChats(req.params.id, req.user._id, query);
+		return {
+			statusCode: HttpStatus.OK,
+			data,
+			meta,
+			message: 'Get chat successfully',
+		}
+	}
+
+	@Get('get-socket-room/:id/question')
+	@UseGuards(JwtAuthGuard)
+	async getQuestions(@Req() req) {
+		const result = await this.presentationService.getQuestions(req.params.id, req.user._id);
+		return {
+			statusCode: HttpStatus.OK,
+			data: result,
+			message: 'Get questions successfully',
 		}
 	}
 

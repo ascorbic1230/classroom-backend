@@ -12,6 +12,7 @@ import { SlideService } from "../slide/slide.service";
 import { SlideModel } from "../slide/schemas/slide.schema";
 import { RoomType, SlideType } from "src/constants";
 import { RedisService } from "src/redis/redis.service";
+import { GetChatDto } from "./dtos/get-chat-dto";
 @Injectable()
 export class PresentationService {
 
@@ -21,7 +22,7 @@ export class PresentationService {
 		@Inject(forwardRef(() => SlideService))
 		private readonly slideService: SlideService,
 		private readonly configService: ConfigService,
-		private readonly redisSerivce: RedisService
+		private readonly redisService: RedisService
 	) { }
 
 	//Admin Route
@@ -134,24 +135,58 @@ export class PresentationService {
 	async getSocketRoom(roomId: string, userId: string) {
 		const user = await this.userService.findById(userId);
 		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-		const roomInfo = await this.redisSerivce.getJson(`room-${roomId}`);
+		const roomInfo = await this.redisService.getJson(`room-${roomId}`);
 		if (!roomInfo) throw new HttpException('Room not found', HttpStatus.NOT_FOUND);
 		if (roomInfo.roomType === RoomType.GROUP) {
 			const isMyGroup = user.groups.find(group => group.toString() === roomInfo.groupId);
 			if (!isMyGroup) throw new HttpException('You do not have permission to join this room', HttpStatus.FORBIDDEN);
 		}
-		const chats = await this.redisSerivce.getListJson(`room-${roomId}-chat`);
-		if (chats) roomInfo.chats = chats;
-		const questionIds = await this.redisSerivce.getList(`room-${roomId}-question`);
+		return roomInfo;
+	}
+
+	async getChats(roomId: string, userId: string, query: GetChatDto) {
+		const user = await this.userService.findById(userId);
+		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+		const roomInfo = await this.redisService.getJson(`room-${roomId}`);
+		if (!roomInfo) throw new HttpException('Room not found', HttpStatus.NOT_FOUND);
+		if (roomInfo.roomType === RoomType.GROUP) {
+			const isMyGroup = user.groups.find(group => group.toString() === roomInfo.groupId);
+			if (!isMyGroup) throw new HttpException('You do not have permission to join this room', HttpStatus.FORBIDDEN);
+		}
+		const setSize = await this.redisService.getSetLength(`room-${roomId}-chat`);
+		let { offset = setSize - 1, size = 10 } = query;
+		offset = offset < 0 ? 0 : offset * 1;
+		size = size < 0 ? 0 : size * 1;
+		const startIndex = offset - size + 1;
+		const nextOffset = startIndex <= 0 ? undefined : startIndex - 1;
+		const data = await this.redisService.getRangeInSetJson(`room-${roomId}-chat`, startIndex, offset);
+		const meta = {
+			offset,
+			nextOffset,
+			total: setSize
+		}
+		return { data, meta };
+	}
+
+	async getQuestions(roomId: string, userId: string) {
+		const user = await this.userService.findById(userId);
+		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+		const roomInfo = await this.redisService.getJson(`room-${roomId}`);
+		if (!roomInfo) throw new HttpException('Room not found', HttpStatus.NOT_FOUND);
+		if (roomInfo.roomType === RoomType.GROUP) {
+			const isMyGroup = user.groups.find(group => group.toString() === roomInfo.groupId);
+			if (!isMyGroup) throw new HttpException('You do not have permission to join this room', HttpStatus.FORBIDDEN);
+		}
+		const questionIds = await this.redisService.getList(`room-${roomId}-question`);
 		if (questionIds) {
 			const questions = [];
 			for (const questionId of questionIds) {
-				const question = await this.redisSerivce.getJson(`room-${roomId}-question-${questionId}`);
+				const question = await this.redisService.getJson(`room-${roomId}-question-${questionId}`);
 				if (question) questions.push(question);
 			}
-			roomInfo.questions = questions;
+			return questions;
 		}
-		return roomInfo;
+		return [];
 	}
 
 	//user will get this api every 5s to check if there is any new presentation
@@ -160,7 +195,7 @@ export class PresentationService {
 		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 		let activeGroups = [];
 		for (const group of user.groups) {
-			const activeGroup = await this.redisSerivce.getJson(`group-${group.toString()}`);
+			const activeGroup = await this.redisService.getJson(`group-${group.toString()}`);
 			if (activeGroup) {
 				const minuteDiff = new Date().getMinutes() - new Date(activeGroup.startTime).getMinutes();
 				activeGroup.message = `Group ${activeGroup.groupName} is presenting (${minuteDiff} minutes before)`;
@@ -174,12 +209,12 @@ export class PresentationService {
 	async getSubmitResult(roomId: string, userId: string) {
 		const user = await this.userService.findById(userId);
 		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-		const roomInfo = await this.redisSerivce.getJson(`room-${roomId}`);
+		const roomInfo = await this.redisService.getJson(`room-${roomId}`);
 		if (!roomInfo) throw new HttpException('Room not found', HttpStatus.NOT_FOUND);
 		//TODO: check userId role in group, etc...
 		let results = [];
 		for (const slideId of roomInfo.slides) {
-			const result = await this.redisSerivce.getJson(`room-${roomId}-slide-${slideId}`);
+			const result = await this.redisService.getJson(`room-${roomId}-slide-${slideId}`);
 			if (result) results.push(result);
 		}
 		return results;

@@ -155,12 +155,18 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`User ${user.email} already joined room ${roomId}`);
 			return;
 		}
+		//check if room exist
+		const roomInfo = await this.redisService.getJson(`room-${roomId}`);
+		if (!roomInfo) {
+			this.server.to(client.id).emit('private-message', { message: `Room ${roomId} not found` });
+			this.logger.log(`Room ${roomId} not found`);
+			return;
+		}
 		client.join(roomId);
 		this.members[user._id] = {
 			...user,
 			roomId
 		}
-		const roomInfo = await this.redisService.getJson(`room-${roomId}`);
 		this.server.to(roomId).emit('wait-in-room', { type: 'info', message: `User ${user.email} joined room ${roomId}`, data: roomInfo });
 		//TODO: return current slide.
 		this.server.to(client.id).emit('wait-join-room', { message: `You joined room ${roomId}`, data: roomInfo });
@@ -335,7 +341,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`Room ${roomId} not found`);
 			return;
 		}
-		await this.redisService.pushEx(`room-${roomId}-chat`, JSON.stringify({ message, user, time: new Date() }));
+		await this.redisService.addToSet(`room-${roomId}-chat`, JSON.stringify({ message, user, time: new Date() }));
 		this.server.to(roomId).emit('wait-in-room', { type: 'new-chat', message: `Member ${user.email} sent a message`, data: { message, user, time: new Date() } });
 	}
 
