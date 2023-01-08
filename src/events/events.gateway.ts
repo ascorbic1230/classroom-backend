@@ -34,11 +34,11 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	server: Server;
 
 	handleConnection(client: Socket) {
-		this.logger.log('Client connected ' + client.id);
+		this.logger.log(client.id.slice(0, 5) + ' connected');
 	}
 
 	handleDisconnect(client: Socket) {
-		this.logger.log('Client disconnected ' + client.id);
+		this.logger.log(client.id.slice(0, 5) + ' disconnected');
 	}
 
 
@@ -51,6 +51,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	@UsePipes(new ValidationPipe({ transform: true }))
 	public async handleHostCreateRoomEvent(client: any, data: CreateRoomDto): Promise<void> {
 		const { user } = client
+		this.logger.log(`${client.id.slice(0, 5)} host-create-room`);
 		const { presentationId, roomType, groupId } = data;
 		const presentation = await this.presentationService.findById(presentationId);
 		if (!presentation) {
@@ -141,11 +142,13 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			roomId,
 		}
 		this.server.to(client.id).emit('wait-host-create-room', { roomId, message: `You are host of room ${roomId}`, data: room });
+		this.hostStartSlide(client, { roomId, slideId: slides[0]._id });
 	}
 
 	@SubscribeMessage('join-room')
 	public async joinRoom(client: any, room): Promise<void> {
 		const { user } = client
+		this.logger.log(`${client.id.slice(0, 5)} join-room as ${user.email}`);
 		const { roomId } = room;
 		if (this.members[user._id]?.roomId === roomId) {
 			this.server.to(client.id).emit('private-message', { message: `You already joined room ${roomId}` });
@@ -159,12 +162,14 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		}
 		const roomInfo = await this.redisService.getJson(`room-${roomId}`);
 		this.server.to(roomId).emit('wait-in-room', { type: 'info', message: `User ${user.email} joined room ${roomId}`, data: roomInfo });
+		//TODO: return current slide.
 		this.server.to(client.id).emit('wait-join-room', { message: `You joined room ${roomId}`, data: roomInfo });
 	}
 
 	@SubscribeMessage('leave-room')
 	public leaveRoom(client: any, room): void {
 		const { user } = client
+		this.logger.log(`${client.id.slice(0, 5)} leave-room`);
 		const { roomId } = room;
 		client.leave(roomId);
 		delete this.members[user._id];
@@ -174,6 +179,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	@SubscribeMessage('host-start-slide')
 	public async hostStartSlide(client: any, data: any): Promise<void> {
 		const { user } = client
+		this.logger.log(`${client.id.slice(0, 5)} host-start-slide`);
 		const { slideId } = data;
 		const roomId = this.members[user._id]?.roomId;
 		if (!roomId) {
@@ -198,13 +204,15 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`User ${user.email} is not host of room ${roomId}`);
 			return;
 		}
-		room.currentSlideId = slide._id.toString();
+		room.currentSlideInfo = slide;
+		this.redisService.setEx(`room-${roomId}`, JSON.stringify(room));
 		this.server.to(roomId).emit('wait-in-room', { type: 'new-slide', message: `Host ${user.email} started slide ${slideId}`, data: slide });
 	}
 
 	@SubscribeMessage('member-vote')
 	public async memberVote(client: any, data: any): Promise<void> {
 		const { user } = client
+		this.logger.log(`${client.id.slice(0, 5)} member-vote`);
 		const { slideId, optionIndex } = data;
 		const roomId = this.members[user._id]?.roomId;
 		if (!roomId) {
@@ -252,6 +260,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	@SubscribeMessage('host-stop-presentation')
 	public async hostStopPresentation(client: any, data: any): Promise<void> {
 		const { user } = client
+		this.logger.log(`${client.id.slice(0, 5)} host-stop-presentation`);
 		const { presentationId } = data;
 		const roomId = this.members[user._id]?.roomId;
 		if (!roomId) {
@@ -287,6 +296,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	@SubscribeMessage('user-terminate-room')
 	public async terminateRoom(client: any, data: any): Promise<void> {
 		const { user } = client
+		this.logger.log(`${client.id.slice(0, 5)} user-terminate-room`);
 		const { roomId } = data;
 		const room = await this.redisService.getJson(`room-${roomId}`);
 		if (!room) {
@@ -311,6 +321,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	@SubscribeMessage('member-chat')
 	public async memberChat(client: any, data: any): Promise<void> {
 		const { user } = client
+		this.logger.log(`${client.id.slice(0, 5)} member-chat`);
 		const { message } = data;
 		const roomId = this.members[user._id]?.roomId;
 		if (!roomId) {
@@ -332,6 +343,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	@SubscribeMessage('member-question')
 	public async memberAskQuestion(client: any, data: any): Promise<void> {
 		const { user } = client
+		this.logger.log(`${client.id.slice(0, 5)} member-question`);
 		const { question } = data;
 		const roomId = this.members[user._id]?.roomId;
 		if (!roomId) {
@@ -358,6 +370,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	@SubscribeMessage('member-upvote-question')
 	public async memberUpvoteQuestion(client: any, data: any): Promise<void> {
 		const { user } = client
+		this.logger.log(`${client.id.slice(0, 5)} member-upvote-question`);
 		const { questionId } = data;
 		const roomId = this.members[user._id]?.roomId;
 		if (!roomId) {
@@ -388,6 +401,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 	@SubscribeMessage('host-answer-question')
 	public async memberAnswerQuestion(client: any, data: any): Promise<void> {
 		const { user } = client
+		this.logger.log(`${client.id.slice(0, 5)} host-answer-question`);
 		const { questionId } = data;
 		const roomId = this.members[user._id]?.roomId;
 		if (!roomId) {

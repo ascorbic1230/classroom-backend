@@ -142,8 +142,15 @@ export class PresentationService {
 		}
 		const chats = await this.redisSerivce.getListJson(`room-${roomId}-chat`);
 		if (chats) roomInfo.chats = chats;
-		// const questions = await this.redisSerivce.getListJson(`room-${roomId}-question`);
-		// if (questions) roomInfo.questions = questions;
+		const questionIds = await this.redisSerivce.getList(`room-${roomId}-question`);
+		if (questionIds) {
+			const questions = [];
+			for (const questionId of questionIds) {
+				const question = await this.redisSerivce.getJson(`room-${roomId}-question-${questionId}`);
+				if (question) questions.push(question);
+			}
+			roomInfo.questions = questions;
+		}
 		return roomInfo;
 	}
 

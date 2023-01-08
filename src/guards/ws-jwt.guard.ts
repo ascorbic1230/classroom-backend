@@ -16,7 +16,6 @@ export class WsJwtAuthGuard implements CanActivate {
 
 		try {
 			const client: Socket = context.switchToWs().getClient<Socket>();
-			this.logger.log('Guarding ' + client.id);
 			let authToken = client.handshake?.headers?.authorization?.toString();
 			if (!authToken) {
 				this.logger.log('No auth token');
