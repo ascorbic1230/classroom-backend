@@ -1,8 +1,6 @@
 import { MailModule } from "../mail/mail.module";
 import { UserModule } from "../user/user.module";
 import { Module } from '@nestjs/common';
-import { ConfigService } from "@nestjs/config";
-import { JwtModule } from "@nestjs/jwt";
 import { MongooseModule } from '@nestjs/mongoose';
 import { GroupController } from './group.controller';
 import { GroupService } from './group.service';
@@ -16,14 +14,7 @@ import { RedisModule } from "src/redis/redis.module";
 		]),
 		UserModule,
 		MailModule,
-		RedisModule,
-		JwtModule.registerAsync({
-			useFactory: (configService: ConfigService) => ({
-				secret: configService.get('JWT_SECRET'),
-				signOptions: { expiresIn: '7d' },
-			}),
-			inject: [ConfigService],
-		}),
+		RedisModule
 	],
 	controllers: [GroupController],
 	providers: [GroupService],

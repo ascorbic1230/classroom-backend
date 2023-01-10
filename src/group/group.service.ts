@@ -21,7 +21,6 @@ export class GroupService {
 		@InjectModel(GroupModel.name) private readonly groupModel: Model<GroupDocument>,
 		private readonly userService: UserService,
 		private readonly configService: ConfigService,
-		private readonly jwtService: JwtService,
 		private readonly mailService: MailService,
 		private readonly redisService: RedisService,
 	) { }
