@@ -90,7 +90,6 @@ export class SlideService {
 	async update(id: string, data: UpdateSlideDto, userId: string) {
 		const slide = await this.slideModel.findById(id);
 		if (!slide) throw new HttpException('Slide not found', HttpStatus.NOT_FOUND);
-		if (slide.userCreated.toString() !== userId) throw new HttpException('You do not have permission to update this slide', HttpStatus.FORBIDDEN);
 		if (data.slideType) {
 			if (data.slideType === SlideType.MULTIPLE_CHOICE)
 				data.content = '';
@@ -106,7 +105,6 @@ export class SlideService {
 	async delete(id: string, userId: string) {
 		const slide = await this.slideModel.findById(id);
 		if (!slide) throw new HttpException('Slide not found', HttpStatus.NOT_FOUND);
-		if (slide.userCreated.toString() !== userId) throw new HttpException('You do not have permission to delete this slide', HttpStatus.FORBIDDEN);
 		await this.slideModel.deleteOne({ _id: id });
 		await this.presentationService.removeSlide(slide.presentationId.toString(), id);
 	}
