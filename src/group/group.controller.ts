@@ -24,6 +24,17 @@ export class GroupController {
 		}
 	}
 
+	@Get(':id/active-presentation')
+	@UseGuards(JwtAuthGuard)
+	async getActivePresentation(@Req() req) {
+		const activePresentation = await this.groupService.findActivePresentation(req.params.id);
+		return {
+			statusCode: HttpStatus.OK,
+			data: activePresentation,
+			message: 'Get active presentation successfully',
+		}
+	}
+
 	@Get('my-created-group')
 	@UseGuards(JwtAuthGuard)
 	async getMyCreatedGroup(@Req() req) {
@@ -147,4 +158,5 @@ export class GroupController {
 			message: 'Assign role successfully'
 		}
 	}
+
 }

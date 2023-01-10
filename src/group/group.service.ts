@@ -97,6 +97,10 @@ export class GroupService {
 		return this.userService.findMyGroup(userId);
 	}
 
+	findActivePresentation(groupId: string) {
+		return this.redisService.getJson(`group-${groupId}`);
+	}
+
 	async leaveGroup(userId: string, groupId: string): Promise<any> {
 		const group = await this.groupModel.findById(groupId).lean();
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
