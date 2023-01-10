@@ -54,4 +54,22 @@ export class AuthController {
 		const user = await this.authService.confirmAccount(token);
 		return res.redirect(`${this.configService.get('FRONTEND_URL')}/login?email=${user.email}`);
 	}
+
+	@Post('/reset-password')
+	async forgotPassword(@Body('email') email) {
+		await this.authService.sendEmailToResetPassword(email);
+		return {
+			message:
+				'Please check your email to reset your password (Check spam folder too)',
+		};
+	}
+
+	@Post('/reset-password/confirm')
+	async resetPassword(@Body('token') token, @Body('password') password) {
+		const user = await this.authService.resetPassword(token, password);
+		return {
+			message: 'Reset password successfully',
+			data: user,
+		};
+	}
 }

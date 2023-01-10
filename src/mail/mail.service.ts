@@ -1,6 +1,6 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from "@nestjs/config";
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class MailService {
@@ -20,7 +20,12 @@ export class MailService {
 		});
 	}
 
-	async sendInviteEmail(emailToInvite: string, url: string, groupName: string, inviter: any) {
+	async sendInviteEmail(
+		emailToInvite: string,
+		url: string,
+		groupName: string,
+		inviter: any,
+	) {
 		await this.mailerService.sendMail({
 			to: emailToInvite,
 			subject: `You have been invited to join ${groupName} group`,
@@ -30,7 +35,23 @@ export class MailService {
 				url,
 				groupName,
 				inviterName: inviter.name,
-				inviterEmail: inviter.email
+				inviterEmail: inviter.email,
+			},
+		});
+	}
+
+	async sendResetPassword(email: string, token: string) {
+		const url = `${this.configService.get(
+			'FRONTEND_URL',
+		)}/renew-password?token=${token}`;
+
+		await this.mailerService.sendMail({
+			to: email,
+			subject: 'Reset your password at TAT-Classroom',
+			template: './reset-password',
+			context: {
+				email,
+				url,
 			},
 		});
 	}

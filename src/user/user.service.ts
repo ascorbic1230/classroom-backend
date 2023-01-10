@@ -48,13 +48,20 @@ export class UserService {
 		return this.jwtService.sign(payload, { expiresIn: '1h' });
 	}
 
-	//check verification code
-	async verifyEmail(verificationCode: string) {
+	async getUserFromVerificationCode(verificationCode: string) {
 		const decoded = this.jwtService.verify(verificationCode);
+		if (!decoded) {
+			throw new Error('Invalid verification code');
+		}
 		const user = await this.userModel.findOne({ email: decoded.email });
 		if (!user) {
 			throw new Error('User not found');
 		}
+		return user;
+	}
+	//check verification code
+	async verifyEmail(verificationCode: string) {
+		const user = await this.getUserFromVerificationCode(verificationCode);
 		user.isEmailVerified = true;
 		await user.save();
 		return user;

@@ -132,4 +132,21 @@ export class AuthService {
 		const user = await this.userService.verifyEmail(token);
 		return user;
 	}
+
+	async sendEmailToResetPassword(email) {
+		const user = await this.userService.findByEmail(email);
+		if (!user) {
+			throw new BadRequestException('User not found');
+		}
+		const resetPasswordToken =
+			this.userService.generateJWTAsVerificationCode(user);
+		await this.mailService.sendResetPassword(email, resetPasswordToken);
+	}
+
+	async resetPassword(token, password) {
+		const user = await this.userService.verifyEmail(token);
+		user.password = hashPassword(password);
+		await user.save();
+		return user;
+	}
 }
