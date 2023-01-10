@@ -9,9 +9,15 @@ import { LogLevel, ValidationPipe } from "@nestjs/common";
 async function bootstrap() {
 	const logger: LogLevel[] = ['log', 'error', 'warn', 'debug', 'verbose'];
 	const app = await NestFactory.create(AppModule, { logger });
+	const configService: ConfigService = app.get(ConfigService);
+
+	console.log(configService.get('ENABLE_CORS'))
+	console.log(configService.get('FRONTEND_URL'))
+	console.log(configService.get('BASE_URL'))
+	console.log(configService.get('MONGODB_URI'))
+	console.log(configService.get('REDIS_HOST'))
 
 	// Set config
-	const configService: ConfigService = app.get(ConfigService);
 	const isEnableCors = configService.get('ENABLE_CORS');
 	if (isEnableCors) {
 		app.enableCors({
