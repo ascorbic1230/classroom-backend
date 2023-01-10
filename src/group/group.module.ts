@@ -7,6 +7,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { GroupController } from './group.controller';
 import { GroupService } from './group.service';
 import { GroupModel, GroupSchema } from './schemas/group.schema';
+import { RedisModule } from "src/redis/redis.module";
 
 @Module({
 	imports: [
@@ -15,6 +16,7 @@ import { GroupModel, GroupSchema } from './schemas/group.schema';
 		]),
 		UserModule,
 		MailModule,
+		RedisModule,
 		JwtModule.registerAsync({
 			useFactory: (configService: ConfigService) => ({
 				secret: configService.get('JWT_SECRET'),

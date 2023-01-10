@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { get } from 'lodash';
 import { GroupModel, GroupDocument } from './schemas/group.schema';
-import { sanitizePageSize } from "../utils";
+import { generateRandomString, sanitizePageSize } from "../utils";
 import { UserService } from "../user/user.service";
 import { UserModel } from "../user/schemas/user.schema";
 import { RoleInGroup } from "../constants";
@@ -11,15 +11,19 @@ import { ConfigService } from "@nestjs/config";
 import { AssignRoleDto } from "./dtos/user-and-role.dto";
 import { JwtService } from "@nestjs/jwt";
 import { MailService } from "../mail/mail.service";
+import { RedisService } from "src/redis/redis.service";
 @Injectable()
 export class GroupService {
+
+	private prefixGroupJoinCode = 'group.join.code'
 
 	constructor(
 		@InjectModel(GroupModel.name) private readonly groupModel: Model<GroupDocument>,
 		private readonly userService: UserService,
 		private readonly configService: ConfigService,
 		private readonly jwtService: JwtService,
-		private readonly mailService: MailService
+		private readonly mailService: MailService,
+		private readonly redisService: RedisService,
 	) { }
 
 	//Admin Route
@@ -172,16 +176,13 @@ export class GroupService {
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
 		const userAndRole = group.usersAndRoles.find(item => item.user.toString() === userId);
 		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
-		return this.generateInviteLinkByJWT({ groupId });
-	}
-
-	generateInviteLinkByJWT(payload: any) {
-		const token = this.jwtService.sign(payload);
-		return `${this.configService.get('FRONTEND_URL')}/group/invite?token=${token}`;
+		const code = generateRandomString();
+		await this.redisService.setEx(`${this.prefixGroupJoinCode}-${code}`, JSON.stringify({ groupId }));
+		return `${this.configService.get('FRONTEND_URL')}/group/invite?token=${code}`;
 	}
 
 	async joinGroupByInviteLink(user: any, token: string): Promise<any> {
-		const payload = this.jwtService.verify(token);
+		const payload = await this.redisService.getJson(`${this.prefixGroupJoinCode}-${token}`);
 		const group = await this.groupModel.findById(payload.groupId).lean();
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
 		const userAndRole = group.usersAndRoles.find(item => item.user.toString() === user._id);
@@ -206,7 +207,9 @@ export class GroupService {
 		if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
 		const userAndRole = group.usersAndRoles.find(item => item.user.toString() === user._id);
 		if (!userAndRole) throw new HttpException('You are not member of this group', HttpStatus.BAD_REQUEST);
-		const url = this.generateInviteLinkByJWT({ groupId, emailToInvite });
+		const code = generateRandomString();
+		await this.redisService.setEx(`${this.prefixGroupJoinCode}-${code}`, JSON.stringify({ groupId, emailToInvite }));
+		const url = `${this.configService.get('FRONTEND_URL')}/group/invite?token=${code}`;
 		await this.mailService.sendInviteEmail(emailToInvite, url, group.name, user);
 	}
 }
