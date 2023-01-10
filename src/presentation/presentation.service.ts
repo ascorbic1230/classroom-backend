@@ -159,6 +159,19 @@ export class PresentationService {
 		return await presentation.save();
 	}
 
+	async removeCollaborator(id: string, data: { email: string }, userId: string) {
+		const presentation = await this.presentationModel.findById(id);
+		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
+		if (presentation.userCreated.toString() !== userId) throw new HttpException('You do not have permission to remove collaborator of this presentation', HttpStatus.FORBIDDEN);
+		const collaborToRemove = await this.userService.findByEmail(data.email);
+		if (!collaborToRemove) throw new HttpException('Collaborator not found', HttpStatus.NOT_FOUND);
+		if (collaborToRemove._id.toString() === userId) throw new HttpException('You cannot add yourself as a collaborator', HttpStatus.BAD_REQUEST);
+		if (!presentation.collaborators.map(item => item.toString()).includes(collaborToRemove._id.toString())) throw new HttpException('Collaborator does not exist', HttpStatus.BAD_REQUEST);
+		presentation.collaborators = presentation.collaborators.filter(collaborator => collaborator.toString() !== collaborToRemove._id.toString());
+		return await presentation.save();
+	}
+
+
 	async getSocketRoom(roomId: string, userId: string) {
 		const user = await this.userService.findById(userId);
 		if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);

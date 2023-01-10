@@ -71,6 +71,17 @@ export class PresentationController {
 		}
 	}
 
+	@Delete(':id/collaborator')
+	@UseGuards(JwtAuthGuard)
+	async removeCollaborator(@Req() req, @Body() body: { email: string }) {
+		const result = await this.presentationService.removeCollaborator(req.params.id, body, req.user._id);
+		return {
+			statusCode: HttpStatus.OK,
+			data: result,
+			message: 'Remove collaborator successfully',
+		}
+	}
+
 	//delete presentation
 	@Delete(':id')
 	@UseGuards(JwtAuthGuard)
