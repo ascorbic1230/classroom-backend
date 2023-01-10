@@ -13,8 +13,8 @@ export class PresentationModel {
 	@Prop({ type: String, default: 'No Description' })
 	description: string;
 
-	@Prop({ type: [String] })
-	collaborators: string[];
+	@Prop({ type: [Types.ObjectId], ref: 'users' })
+	collaborators: Types.ObjectId[];
 
 	@Prop({ type: [{ type: Types.ObjectId, ref: 'slides' }] })
 	slides: { type: Types.ObjectId, ref: 'slides' }[];

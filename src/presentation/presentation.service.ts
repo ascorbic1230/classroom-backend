@@ -41,7 +41,11 @@ export class PresentationService {
 		});
 		const [total, data] = await Promise.all([
 			this.presentationModel.count(_query),
-			this.presentationModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: SlideModel.name, 'select': 'title content slideType options' }).lean()
+			this.presentationModel.find(_query).limit(limit).skip(skip).sort({ createdAt: -1 })
+				.populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' })
+				.populate({ path: 'collaborators', model: UserModel.name, select: 'name email avatarUrl' })
+				.populate({ path: 'slides', model: SlideModel.name, 'select': 'title content slideType options' })
+				.lean()
 		]);
 		return {
 			statusCode: HttpStatus.OK,
@@ -57,12 +61,20 @@ export class PresentationService {
 	}
 
 	async findById(id: string): Promise<any> {
-		const presentation = await this.presentationModel.findById(id).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title content slideType options ' }).lean();
+		const presentation = await this.presentationModel.findById(id)
+			.populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' })
+			.populate({ path: 'collaborators', model: UserModel.name, select: 'name email avatarUrl' })
+			.populate({ path: 'slides', model: SlideModel.name, 'select': 'title content slideType options' })
+			.lean()
 		return presentation;
 	}
 
 	findMyPresentation(userId: string) {
-		return this.presentationModel.find({ userCreated: userId }).populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' }).populate({ path: 'slides', model: 'SlideModel', 'select': 'title content slideType options ' }).lean();
+		return this.presentationModel.find({ userCreated: userId })
+			.populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' })
+			.populate({ path: 'collaborators', model: UserModel.name, select: 'name email avatarUrl' })
+			.populate({ path: 'slides', model: SlideModel.name, 'select': 'title content slideType options' })
+			.lean()
 	}
 
 	async create(data: PresentationDto, userId: string) {
@@ -86,7 +98,7 @@ export class PresentationService {
 	async update(id: string, data: PresentationDto, userId: string) {
 		const presentation = await this.presentationModel.findById(id);
 		if (!presentation) throw new HttpException('Presentation not found', HttpStatus.NOT_FOUND);
-		const hasPermission = presentation.userCreated.toString() === userId || presentation.collaborators.includes(userId);
+		const hasPermission = presentation.userCreated.toString() === userId || presentation.collaborators.map(item => item.toString()).includes(userId);
 		if (!hasPermission) throw new HttpException('You do not have permission to update this presentation', HttpStatus.FORBIDDEN);
 		return this.presentationModel.findOneAndUpdate({ _id: id }, {
 			...data,
