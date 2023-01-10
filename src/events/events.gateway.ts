@@ -290,12 +290,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`Presentation ${presentationId} not found or not belong to room ${roomId}`);
 			return;
 		}
-		//update all options in each slide to new quantity, save to mongodb
-		const roomSlideIds = room.slides;
-		roomSlideIds.forEach(async (slideId) => {
-			const slide = await this.redisService.getJson(`room-${roomId}-slide-${slideId}`);
-			await this.slideService.update(slide._id, { options: slide.options }, user._id);
-		});
 		this.server.to(roomId).emit('wait-in-room', { type: 'stop-presentation', message: `Host ${user.email} stopped presentation ${presentationId}` });
 		this.terminateRoom(client, { roomId });
 	}
