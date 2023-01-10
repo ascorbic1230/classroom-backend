@@ -25,6 +25,17 @@ export class PresentationController {
 		}
 	}
 
+	@Get('check-active-group-presentation')
+	@UseGuards(JwtAuthGuard)
+	async checkActiveGroupPresentation(@Req() req) {
+		const result = await this.presentationService.checkActiveGroupPresentation(req.user._id);
+		return {
+			statusCode: HttpStatus.OK,
+			data: result,
+			message: 'Get my active group presentation successfully',
+		}
+	}
+
 	//Admin Route
 	@Get(':id')
 	@UseGuards(JwtAuthGuard)
@@ -136,17 +147,6 @@ export class PresentationController {
 			statusCode: HttpStatus.OK,
 			data: result,
 			message: `Get submit result of room ${req.params.id} successfully`,
-		}
-	}
-
-	@Get('check-active-group-presentation')
-	@UseGuards(JwtAuthGuard)
-	async checkActiveGroupPresentation(@Req() req) {
-		const result = await this.presentationService.checkActiveGroupPresentation(req.user._id);
-		return {
-			statusCode: HttpStatus.OK,
-			data: result,
-			message: 'Get my active group presentation successfully',
 		}
 	}
 }
