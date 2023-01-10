@@ -16,6 +16,7 @@ import { CreateRoomDto } from "./dtos/create-room-dto";
 import { RoleInGroup, RoomType } from "src/constants";
 import { GroupService } from "src/group/group.service";
 import * as crypto from 'crypto';
+import { generateRandom8Digits } from "src/utils";
 
 @WebSocketGateway({
 	cors: {
@@ -98,7 +99,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			slide.userVotes = [];
 		}
 
-		const roomId = Math.random().toString(36).slice(2, 10);
+		const roomId = generateRandom8Digits();
 		//let host join room
 		client.join(roomId);
 		delete presentation._id;
@@ -211,7 +212,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			return;
 		}
 		room.currentSlideInfo = slide;
-		this.redisService.setEx(`room-${roomId}`, JSON.stringify(room));
+		await this.redisService.setEx(`room-${roomId}`, JSON.stringify(room));
 		this.server.to(roomId).emit('wait-in-room', { type: 'new-slide', message: `Host ${user.email} started slide ${slideId}`, data: slide });
 	}
 
@@ -313,11 +314,11 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		//delete slides
 		const roomSlideIds = room.slides;
 		roomSlideIds.forEach(async (slideId) => {
-			await this.redisService.delete(`room-${roomId}-slide-${slideId}`);
+			await this.redisService.del(`room-${roomId}-slide-${slideId}`);
 		}
 		);
 		//delete room
-		await this.redisService.delete(`room-${roomId}`);
+		await this.redisService.del(`room-${roomId}`);
 		//delete member
 		delete this.members[user._id];
 		this.server.to(roomId).emit('wait-in-room', { type: 'terminate-room', message: `User ${user.email} terminated room ${roomId}` });

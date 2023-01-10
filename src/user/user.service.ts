@@ -43,25 +43,8 @@ export class UserService {
 		return this.jwtService.sign(payload);
 	}
 
-	generateJWTAsVerificationCode(user: any) {
-		const payload = { email: user.email, name: user.name };
-		return this.jwtService.sign(payload, { expiresIn: '1h' });
-	}
-
-	async getUserFromVerificationCode(verificationCode: string) {
-		const decoded = this.jwtService.verify(verificationCode);
-		if (!decoded) {
-			throw new Error('Invalid verification code');
-		}
-		const user = await this.userModel.findOne({ email: decoded.email });
-		if (!user) {
-			throw new Error('User not found');
-		}
-		return user;
-	}
-	//check verification code
-	async verifyEmail(verificationCode: string) {
-		const user = await this.getUserFromVerificationCode(verificationCode);
+	async verifyEmail(email: string) {
+		const user = await this.findByEmail(email);
 		user.isEmailVerified = true;
 		await user.save();
 		return user;
@@ -112,6 +95,16 @@ export class UserService {
 			throw new BadRequestException('Old password is not correct');
 		}
 		user.password = await hashPassword(data.newPassword);
+		await user.save();
+		return user;
+	}
+
+	async resetPassword(email: string, newPassword: string) {
+		const user = await this.findByEmail(email);
+		if (!user) {
+			throw new BadRequestException('User not found');
+		}
+		user.password = await hashPassword(newPassword);
 		await user.save();
 		return user;
 	}

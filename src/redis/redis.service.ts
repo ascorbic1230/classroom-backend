@@ -97,7 +97,7 @@ export class RedisService
 		return this.client.lRange(key, 0, -1);
 	}
 
-	delete(key: string) {
+	del(key: string) {
 		return this.client.del(key);
 	}
 
