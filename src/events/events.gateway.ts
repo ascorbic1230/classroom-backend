@@ -298,6 +298,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			await this.slideService.update(slide._id, { options: slide.options }, user._id);
 		});
 		this.server.to(roomId).emit('wait-in-room', { type: 'stop-presentation', message: `Host ${user.email} stopped presentation ${presentationId}` });
+		this.terminateRoom(client, { roomId });
 	}
 
 	@SubscribeMessage('user-terminate-room')
