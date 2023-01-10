@@ -245,19 +245,18 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			this.logger.log(`Option with index ${optionIndex} not found`);
 			return;
 		}
-		// //check if slide is current slide
+		// TODO: check if slide is current slide
 		// if (room.currentSlideId !== slide._id.toString()) {
 		// 	this.server.to(client.id).emit('private-message', { message: `Slide ${slideId} is not current slide` });
 		// 	this.logger.log(`Slide ${slideId} is not current slide`);
 		// 	return;
 		// }
-		//TODO: uncomment below
-		// const isUserVoted = roomSlide.userVotes.some((userVote) => userVote.userId === user._id.toString());
-		// if (isUserVoted) {
-		// 	this.server.to(client.id).emit('private-message', { message: `User ${user.email} already voted` });
-		// 	this.logger.log(`User ${user.email} already voted`);
-		// 	return;
-		// }
+		const isUserVoted = slide.userVotes.some((userVote) => userVote.userId === user._id.toString());
+		if (isUserVoted) {
+			this.server.to(client.id).emit('private-message', { message: `User ${user.email} already voted` });
+			this.logger.log(`User ${user.email} already voted`);
+			return;
+		}
 		option.quantity += 1;
 		slide.userVotes.push({ userId: user._id.toString(), optionIndex, createdAt: new Date() });
 		await this.redisService.setEx(`room-${roomId}-slide-${slideId}`, JSON.stringify(slide));
