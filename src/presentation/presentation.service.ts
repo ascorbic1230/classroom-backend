@@ -239,7 +239,6 @@ export class PresentationService {
 			if (activeGroup) {
 				const minuteDiff = new Date().getMinutes() - new Date(activeGroup.startTime).getMinutes();
 				activeGroup.message = `Group ${activeGroup.groupName} is presenting (${minuteDiff} minutes before)`;
-				//join link mấy a tự tạo ở frontend nha
 				activeGroups.push(activeGroup);
 			}
 		}

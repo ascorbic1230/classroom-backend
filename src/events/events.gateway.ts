@@ -321,6 +321,9 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		await this.redisService.del(`room-${roomId}`);
 		//delete member
 		delete this.members[user._id];
+		//if room is group, delete group
+		if (room.groupId)
+			await this.redisService.del(`group-${room.groupId}`);
 		this.server.to(roomId).emit('wait-in-room', { type: 'terminate-room', message: `User ${user.email} terminated room ${roomId}` });
 	}
 
