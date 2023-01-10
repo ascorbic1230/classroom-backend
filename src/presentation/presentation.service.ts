@@ -70,7 +70,7 @@ export class PresentationService {
 	}
 
 	findMyPresentation(userId: string) {
-		return this.presentationModel.find({ userCreated: userId })
+		return this.presentationModel.find({ $or: [{ userCreated: userId }, { collaborators: userId }] })
 			.populate({ path: 'userCreated', model: UserModel.name, select: 'name email avatarUrl' })
 			.populate({ path: 'collaborators', model: UserModel.name, select: 'name email avatarUrl' })
 			.populate({ path: 'slides', model: SlideModel.name, 'select': 'title content slideType options' })
