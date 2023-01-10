@@ -12,10 +12,14 @@ async function bootstrap() {
 
 	// Set config
 	const configService: ConfigService = app.get(ConfigService);
-	app.enableCors({
-		origin: configService.get('FRONTEND_URL'),
-		credentials: true,
-	});
+	const isEnableCors = configService.get('ENABLE_CORS');
+	if (isEnableCors) {
+		app.enableCors({
+			origin: configService.get('FRONTEND_URL'),
+			credentials: true,
+		});
+	}
+
 	app.use(cookieParser());
 	app.useGlobalPipes(
 		new ValidationPipe({
@@ -24,6 +28,6 @@ async function bootstrap() {
 	);
 	const port = configService.get('PORT');
 	await app.listen(port);
-	console.log(`Application is running on: ${await app.getUrl()}`);
+	console.log(`Application is running on: ${await app.getUrl()} (CORS = ${isEnableCors})`)
 }
 bootstrap();
