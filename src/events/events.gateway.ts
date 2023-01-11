@@ -258,7 +258,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			return;
 		}
 		option.quantity += 1;
-		slide.userVotes.push({ userId: user._id.toString(), optionIndex, createdAt: new Date() });
+		slide.userVotes.push({ user: user, optionIndex, createdAt: new Date() });
 		await this.redisService.setEx(`room-${roomId}-slide-${slideId}`, JSON.stringify(slide));
 		this.server.to(roomId).emit('wait-in-room', { type: 'new-vote', message: `Member ${user.email} voted for option ${optionIndex}`, data: slide.options });
 	}
