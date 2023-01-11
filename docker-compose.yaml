@@ -3,8 +3,19 @@ version: '3'
 services:
   backend:
     container_name: backend
-    build: .
+    build: ./classroom-backend/.
     ports:
       - '3000:3000'
     env_file:
-      - ./.env
+      - ./classroom-backend/.env
+    environment:
+      - FRONTEND_URL=http://frontend:80
+      - ENABLE_CORS=false
+
+  frontend:
+    container_name: frontned
+    build: ./classroom-frontend/.
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_BACKEND_URL="http://localhost:8080/api"
