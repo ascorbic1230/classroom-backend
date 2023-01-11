@@ -115,7 +115,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 		if (roomType === RoomType.GROUP) {
 			const oldRoom = await this.redisService.getJson(`group-${groupId}`);
 			if (oldRoom) {
-				this.terminateRoom(client, { roomId: oldRoom.roomId });
+				await this.terminateRoom(client, { roomId: oldRoom.roomId });
 				// TODO: uncomment if needed
 				// this.server.to(client.id).emit('private-message', { message: `Old room ${oldRoom.roomId} was terminated` });
 			}
@@ -291,7 +291,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 			return;
 		}
 		this.server.to(roomId).emit('wait-in-room', { type: 'stop-presentation', message: `Host ${user.email} stopped presentation ${presentationId}` });
-		this.terminateRoom(client, { roomId });
+		await this.terminateRoom(client, { roomId });
 	}
 
 	@SubscribeMessage('user-terminate-room')
