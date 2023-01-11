@@ -18,12 +18,13 @@ async function bootstrap() {
 	console.log(configService.get('REDIS_HOST'))
 
 	// Set config
-	const isEnableCors = configService.get('ENABLE_CORS');
-	if (isEnableCors) {
+	const isDisableCors = configService.get('ENABLE_CORS') === 'false';
+	if (!isDisableCors) {
 		app.enableCors({
 			origin: configService.get('FRONTEND_URL'),
 			credentials: true,
 		});
+		console.log('CORS enabled!')
 	}
 
 	app.use(cookieParser());
@@ -34,6 +35,6 @@ async function bootstrap() {
 	);
 	const port = configService.get('PORT');
 	await app.listen(port);
-	console.log(`Application is running on: ${await app.getUrl()} (CORS = ${isEnableCors})`)
+	console.log(`Application is running on: ${await app.getUrl()}`)
 }
 bootstrap();
